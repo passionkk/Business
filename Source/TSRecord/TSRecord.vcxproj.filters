@@ -13,14 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="TS">
+      <UniqueIdentifier>{d76de07c-912b-41ce-a023-147be51af4c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="CommonDefine">
+      <UniqueIdentifier>{956d10bf-c32a-4470-8f96-9878062bbb32}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="TSRecord.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="TSRecordDlg.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -33,16 +36,37 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TSMuxer.h">
+      <Filter>TS</Filter>
+    </ClInclude>
+    <ClInclude Include="TSRecordProject.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TSRecord.h">
+      <Filter>TS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Common\RecordBase.h">
+      <Filter>CommonDefine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="TSRecord.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="TSRecordDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TSMuxer.cpp">
+      <Filter>TS</Filter>
+    </ClCompile>
+    <ClCompile Include="TSRecordProject.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TSRecord.cpp">
+      <Filter>TS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Include\Common\RecordBase.cpp">
+      <Filter>CommonDefine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -3,9 +3,10 @@
 //
 
 #include "stdafx.h"
-#include "TSRecord.h"
+#include "TSRecordProject.h"
 #include "TSRecordDlg.h"
 #include "afxdialogex.h"
+#include "TSRecord.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -97,6 +98,13 @@ BOOL CTSRecordDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
+
+	//TSRecord tsRecord;
+	//tsRecord.Start(g711a, h264, "abcdefg.ts");
+	//tsRecord.m_strAbFilePath = "abcdefg";
+	//std::string abc = tsRecord.GenerateFilePath();
+	//Sleep(10000);
+	//abc = tsRecord.GenerateFilePath();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

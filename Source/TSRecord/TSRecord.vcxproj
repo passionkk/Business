@@ -55,11 +55,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../Include;../../Include/FFmpeg</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>../../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>../../Depends/Poco;../../Depends/FFmpeg</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -102,18 +104,28 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\Common\RecordBase.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="TSMuxer.h" />
     <ClInclude Include="TSRecord.h" />
+    <ClInclude Include="TSRecordProject.h" />
     <ClInclude Include="TSRecordDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Include\Common\RecordBase.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="TSMuxer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="TSRecord.cpp" />
+    <ClCompile Include="TSRecordProject.cpp" />
     <ClCompile Include="TSRecordDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
