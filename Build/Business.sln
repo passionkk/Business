@@ -5,6 +5,13 @@ VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TSRecord", "..\Source\TSRecord\TSRecord.vcxproj", "{EA69E740-5C58-41CC-B05B-93BCD8D707B2}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PullStreamModule", "..\Source\PullStreamModule\PullStreamModule.vcxproj", "{9DF41D19-25CD-4DBB-AD8C-439208018284}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02C969E8-3828-49AD-8929-B3FAE3440EDB}"
+	ProjectSection(SolutionItems) = preProject
+		..\Include\Common\CommonDef.h = ..\Include\Common\CommonDef.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -15,6 +22,10 @@ Global
 		{EA69E740-5C58-41CC-B05B-93BCD8D707B2}.Debug|Win32.Build.0 = Debug|Win32
 		{EA69E740-5C58-41CC-B05B-93BCD8D707B2}.Release|Win32.ActiveCfg = Release|Win32
 		{EA69E740-5C58-41CC-B05B-93BCD8D707B2}.Release|Win32.Build.0 = Release|Win32
+		{9DF41D19-25CD-4DBB-AD8C-439208018284}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9DF41D19-25CD-4DBB-AD8C-439208018284}.Debug|Win32.Build.0 = Debug|Win32
+		{9DF41D19-25CD-4DBB-AD8C-439208018284}.Release|Win32.ActiveCfg = Release|Win32
+		{9DF41D19-25CD-4DBB-AD8C-439208018284}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

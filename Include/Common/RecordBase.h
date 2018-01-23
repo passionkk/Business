@@ -1,6 +1,7 @@
 #ifndef _RecordBase_H_
 #define _RecordBase_H_
 
+#include "CommonDef.h"
 #include <stdint.h>
 #include <string>
 
@@ -16,35 +17,6 @@ extern "C"
 #else
 #endif
 
-enum EventType
-{
-	Data = 1,
-};
-
-enum Record_State
-{
-	RS_Stop		= 0,
-	RS_Record	= 1,
-	RS_Pause	= 2,
-	RS_Count,
-};
-
-enum MediaType
-{
-	Video = 0,
-	Audio = 1,
-};
-
-enum FormatType
-{
-	none = -2, // 当前流不存在
-	unkonwn = -1, // 不指定AVInputFormat，FFmpeg内部探测流编码格式
-	g711a = 19,
-	g711u = 20,
-	aaclc = 42,
-	h264 = 96,
-	h265 = 265,
-};
 /************************************************************************/
 /*
 	文件说明	：	录制功能基类
