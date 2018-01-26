@@ -37,9 +37,10 @@ public:
 	static void	InitFFmpegModule();
 	static void UninitFFmpegModule();
 
-	bool	OpenStream(std::string strUrl, bool bGetVideo = true, bool bGetAudio = true);
 	void	SetVideoParam(int nDstWidth, int nDstHeight, PixelFmt eDstPixFmt);
 	void	SetAudioParam(int nDstChannels, int nDstSampleRate, SampleFmt eDstSamFmt);
+	bool	OpenStream(std::string strUrl, bool bGetVideo = true, bool bGetAudio = true);
+	int		Seek(int nMillSec);
 	bool	CloseStream();
 
 	void	run();
