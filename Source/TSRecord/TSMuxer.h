@@ -17,7 +17,7 @@ public:
         void *pUserData,
         const uint8_t *pData,
         uint32_t iLen,
-        uint64_t iPts /*ms*/) = 0;
+        uint64_t iPts /*ms*//*, uint64_t iDts*/) = 0;
 
 };
 
@@ -28,7 +28,7 @@ public:
         void *pUserData,
         const uint8_t *pData,
         uint32_t iLen,
-        uint64_t iPts /*ms*/);
+        uint64_t iPts /*ms*//*,uint64_t iDts*/);
 
     struct AVPacketData
     {
@@ -37,6 +37,7 @@ public:
         int iOffset;
         int iProbeOffset;
         uint64_t iTimestamp; // us
+		uint64_t iTimestampDTS;	// us 
         FormatType eFormatType;
     };
 
@@ -62,7 +63,8 @@ public:
         FormatType eFormatType,
         uint8_t *pData,
         int iDataSize,
-        uint64_t iTimestamp /*us*/);
+        uint64_t iTimestamp /*us*/,
+		uint64_t iTimestampDTS /*us*/);	//含B帧的情况需传入DTS
 
     // 开始
     bool Start(

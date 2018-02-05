@@ -16,6 +16,12 @@
     <Filter Include="PullStreamModule">
       <UniqueIdentifier>{6c76a31a-3de8-4c25-8a25-49f4d5af78d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="TSRecord">
+      <UniqueIdentifier>{4d2837a1-9795-4ab1-a4b4-95a45a3e2908}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="TSModule">
+      <UniqueIdentifier>{ff77294f-db88-4c28-9f3f-2f4303ccdc55}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -36,8 +42,20 @@
     <ClInclude Include="PullStreamModulePro.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Include\Common\CommonDef.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="PullStreamModule.h">
       <Filter>PullStreamModule</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Include\Common\RecordBase.h">
+      <Filter>TSModule</Filter>
+    </ClInclude>
+    <ClInclude Include="..\TSRecord\TSMuxer.h">
+      <Filter>TSRecord</Filter>
+    </ClInclude>
+    <ClInclude Include="..\TSRecord\TSRecord.h">
+      <Filter>TSRecord</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -50,8 +68,20 @@
     <ClCompile Include="PullStreamModulePro.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Include\Common\CommonDef.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
     <ClCompile Include="PullStreamModule.cpp">
       <Filter>PullStreamModule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Include\Common\RecordBase.cpp">
+      <Filter>TSModule</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TSRecord\TSMuxer.cpp">
+      <Filter>TSRecord</Filter>
+    </ClCompile>
+    <ClCompile Include="..\TSRecord\TSRecord.cpp">
+      <Filter>TSRecord</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -51,7 +51,6 @@ BOOL CPullStreamModuleApp::InitInstance()
 
 	CWinApp::InitInstance();
 
-
 	AfxEnableControlContainer();
 
 	// 创建 shell 管理器，以防对话框包含

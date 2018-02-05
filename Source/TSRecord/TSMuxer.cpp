@@ -121,7 +121,8 @@ bool TSMuxer::ImportAVPacket(
     FormatType eFormatType,
     uint8_t *pData,
     int iDataSize,
-    uint64_t iTimestamp)
+    uint64_t iTimestamp,
+	uint64_t iTimestampDTS)
 {
     if (m_bRoutineStop || (NULL == pData) || iDataSize <= 0 ||
         (Audio == eMediaType && none == m_eAFormatType) ||
@@ -135,6 +136,7 @@ bool TSMuxer::ImportAVPacket(
     pAVPacketData->iDataSize = iDataSize;
     pAVPacketData->iOffset = 0;
     pAVPacketData->iTimestamp = iTimestamp;
+	pAVPacketData->iTimestampDTS = iTimestampDTS;
     pAVPacketData->eFormatType = eFormatType;
     pAVPacketData->iProbeOffset = 0;
 
@@ -523,24 +525,25 @@ void TSMuxer::run()
 
             uint64_t iAPts = 0;
             uint64_t iVPts = 0;
+			int64_t iVDts = 0;
             {
                 Poco::Mutex::ScopedLock lock(m_DataMutex);
                 if (bHasAudio)
-                {
-                    iAPts = m_AudioPacketDatas.front()->iTimestamp -
-                        iBaseTimestamp;
-                }
+				{
+					iAPts = m_AudioPacketDatas.front()->iTimestamp - iBaseTimestamp;
+				}
                 if (bHasVideo)
                 {
-                    iVPts = m_VideoPacketDatas.front()->iTimestamp -
-                        iBaseTimestamp;
-                }
+					iVPts = m_VideoPacketDatas.front()->iTimestamp - iBaseTimestamp;
+					iVDts = m_VideoPacketDatas.front()->iTimestampDTS - iBaseTimestamp;
+			    }
             }
 
             AVFormatContext * pInFormatCtx = NULL;
             AVStream * pInStream = NULL;
             AVStream * pOutStream = NULL;
             uint64_t iCurPts = 0;
+			int64_t iCurDts = 0;
             int iOutStreamIndex = 0;
             std::deque<AVPacketData *> * pAVPacketDataDeque = NULL;
             MediaType eType = Audio;
@@ -556,6 +559,7 @@ void TSMuxer::run()
                 pInStream = pInFormatCtx->streams[iVideoInIndex];
                 pOutStream = m_pOutFormatCtx->streams[iVideoOutIndex];
                 iCurPts = iVPts;
+				iCurDts = iVDts;
                 pAVPacketDataDeque = &m_VideoPacketDatas;
                 eType = Video;
             }
@@ -576,13 +580,26 @@ void TSMuxer::run()
 
             pkt.pts = int64_t(iCurPts * 1.0 /
                 AV_TIME_BASE / av_q2d(pInStream->time_base));
-            pkt.dts = pkt.pts;
-
-            //Convert PTS/DTS  
+			
+			if (eType == Audio)
+			{
+				pkt.dts = pkt.pts;
+			}
+			else
+			{
+				pkt.dts = int64_t(iCurDts * 1.0 /
+							  AV_TIME_BASE / av_q2d(pInStream->time_base));
+				pkt.dts = av_rescale_q_rnd(pkt.dts,
+							   pInStream->time_base, pOutStream->time_base,
+							   (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
+			}
+			 //Convert PTS/DTS  
             pkt.pts = av_rescale_q_rnd(pkt.pts,
                 pInStream->time_base, pOutStream->time_base,
                 (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
-            pkt.dts = pkt.pts;
+
+            //pkt.dts = pkt.pts;
+			
             pkt.stream_index = iOutStreamIndex;
 
             //Write

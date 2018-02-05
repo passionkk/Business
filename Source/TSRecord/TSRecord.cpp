@@ -6,6 +6,8 @@ TSRecord::TSRecord()
 	: RecordBase()
 	, m_bStop(true)
 	, m_i64StartRecord(0)
+	, m_bEnableVideo(true)
+	, m_bEnableAudio(true)
 {
 	m_TSMuxer.Subscribe(this, NULL);
 }
@@ -15,24 +17,38 @@ TSRecord::~TSRecord()
 {
 }
 
-bool TSRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, uint64_t iTimestamp)
+bool TSRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, uint64_t iTimestamp, uint64_t iTimestampDTS)
 {
-	return m_TSMuxer.ImportAVPacket(eMediaType,
-		eFormatType, pData, iDataSize, iTimestamp);
+	if ((eMediaType == Audio && m_bEnableAudio) || (eMediaType == Video && m_bEnableVideo))
+	{
+#if WIN32
+		//TRACE(L"[TSRecord::ImportAVPacket]eMediaType is %d, iTimestamp is %lld, iTimestampDTS is %lld.\n", eMediaType, iTimestamp, iTimestampDTS);
+#endif
+		return m_TSMuxer.ImportAVPacket(eMediaType, eFormatType, pData, iDataSize, iTimestamp, iTimestampDTS);// iTimestampDTS);
+	}
+	return false;
 }
 
 bool TSRecord::Start(FormatType eAFormatType, FormatType eVFormatType, const std::string strAbFilePath)
 {
 	bool bRet = false;
 
+	if (!m_TSMuxer.IsRunning() && m_thread.isRunning())
+		Stop();
+
 	if (!m_thread.isRunning())
 	{
+		if (eAFormatType == none)
+			m_bEnableAudio = false;
+		if (eVFormatType == none)
+			m_bEnableVideo = false;
 		bRet = m_TSMuxer.Start(eAFormatType, eVFormatType);
 		if (bRet)
 		{
 			m_strAbFilePath = strAbFilePath;
 			m_bStop = false;
 			m_thread.start(*this);
+			m_RecordState = RS_Record;
 		}
 	}
 	return bRet;
@@ -79,7 +95,7 @@ bool TSRecord::Resume()
 		Poco::Clock clkTmp;
 		clkTmp.update();
 		int64_t i64Diff = clkTmp - m_clkPauseOnce;
-		m_nPausedTime += static_cast<int>(i64Diff);
+		m_nPausedTime += static_cast<int>(i64Diff / 1000);
 	}
 	else
 	{
@@ -93,7 +109,7 @@ bool TSRecord::IsRunning() const
 	return m_thread.isRunning() && m_TSMuxer.IsRunning();
 }
 
-void TSRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, uint64_t iPts)
+void TSRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, uint64_t iPts/*, uint64_t iDts*/)
 {
 	if (m_RecordState == RS_Record)
 	{
@@ -102,6 +118,7 @@ void TSRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, 
 		pTSPacketData->iDataSize = iLen;
 		pTSPacketData->iOffset = 0;
 		pTSPacketData->iTimeCode = iPts;
+		//pTSPacketData->iTimeCodeDTS = iDts;
 		memcpy(pTSPacketData->pData, pData, iLen);
 		{
 			Poco::Mutex::ScopedLock lock(m_DataMutex);
@@ -117,56 +134,64 @@ void TSRecord::run()
 	TSPacketData *pPacket = NULL;
 	Poco::FileStream tsFStream;
 	bool bCloseFile = false;
+	m_i64StartRecord = 0;
+	uint64_t i64LastPacketTime = 0;
 	while (!m_bStop)
 	{
 		m_DataMutex.lock();
 		bEmpty = m_TSPacketDatas.empty();
 		m_DataMutex.unlock();
-		if (bEmpty)
+		if (bEmpty && !m_bStop)
 		{
 			Poco::Thread::sleep(1);
 			continue;
 		}
-		while (!bEmpty)
+		if (bNeedSplit)
 		{
-			if (bNeedSplit)
+			std::string strFilePath = GenerateFilePath();
+			tsFStream.open(strFilePath, std::ios::in);
+			bNeedSplit = false;
+			m_nRecordedSize = 0;
+			m_i64StartRecord = i64LastPacketTime;
+			m_nPausedTime = 0;
+			m_nRecordedDuration = 0;
+			bCloseFile = false;
+			
+			//Destroy();
+			//continue;
+		}
+		Poco::Mutex::ScopedLock lock(m_DataMutex);
+		pPacket = m_TSPacketDatas.front();
+		tsFStream.write((const char*)pPacket->pData, pPacket->iDataSize);
+		m_nRecordedSize += pPacket->iDataSize;
+		if (m_nSplitType == 0)
+		{
+			m_nRecordedDuration = pPacket->iTimeCode - m_i64StartRecord - m_nPausedTime;
+			if (m_nRecordedDuration >= m_nSplitDuration)
 			{
-				std::string strFilePath = GenerateFilePath();
-				tsFStream.open(strFilePath, std::ios::in);
-				bNeedSplit = false;
-				m_nRecordedSize = 0;
-				m_i64StartRecord = 0;
-				m_nRecordedDuration = 0;
-				bCloseFile = false;
-			}
-			Poco::Mutex::ScopedLock lock(m_DataMutex);
-			pPacket = m_TSPacketDatas.front();
-			tsFStream.write((const char*)pPacket->pData, pPacket->iDataSize);
-			m_nRecordedSize += pPacket->iDataSize;
-			if (m_nSplitType == 0)
-			{
-				m_nRecordedDuration = pPacket->iTimeCode - m_i64StartRecord - m_nPausedTime;
-				if (m_nRecordedDuration >= m_nSplitDuration)
-				{
-					bNeedSplit = true;
-					tsFStream.close();
-					bCloseFile = true;
-				}
-			}
-			else if (m_nSplitType == 1)
-			{
-				if (m_nRecordedSize >= m_nSplitSize)
-				{
-					bNeedSplit = true;
-					tsFStream.close();
-					bCloseFile = true;
-				}
-			}
-			if (m_i64StartRecord == 0)
-			{
-				m_i64StartRecord = pPacket->iTimeCode;
+				bNeedSplit = true;
+				tsFStream.close();
+				bCloseFile = true;
 			}
 		}
+		else if (m_nSplitType == 1)
+		{
+			if (m_nRecordedSize >= m_nSplitSize)
+			{
+				bNeedSplit = true;
+				tsFStream.close();
+				bCloseFile = true;
+			}
+		}
+		if (m_i64StartRecord == 0)
+		{
+			m_i64StartRecord = pPacket->iTimeCode;
+		}
+		i64LastPacketTime = pPacket->iTimeCode;
+
+		delete[] pPacket->pData;
+		delete pPacket;
+		m_TSPacketDatas.pop_front();
 	}
 	if(!bCloseFile)
 		tsFStream.close();

@@ -43,6 +43,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)D</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -102,6 +103,10 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\Include\Common\CommonDef.h" />
+    <ClInclude Include="..\..\Include\Common\RecordBase.h" />
+    <ClInclude Include="..\TSRecord\TSMuxer.h" />
+    <ClInclude Include="..\TSRecord\TSRecord.h" />
     <ClInclude Include="PullStreamModule.h" />
     <ClInclude Include="PullStreamModulePro.h" />
     <ClInclude Include="PullStreamModuleDlg.h" />
@@ -110,6 +115,16 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Include\Common\CommonDef.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\Include\Common\RecordBase.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\TSRecord\TSMuxer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\TSRecord\TSRecord.cpp" />
     <ClCompile Include="PullStreamModule.cpp" />
     <ClCompile Include="PullStreamModulePro.cpp" />
     <ClCompile Include="PullStreamModuleDlg.cpp" />
@@ -130,4 +145,9 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <ProjectExtensions>
+    <VisualStudio>
+      <UserProperties RESOURCE_FILE="PullStreamModule.rc" />
+    </VisualStudio>
+  </ProjectExtensions>
 </Project>
