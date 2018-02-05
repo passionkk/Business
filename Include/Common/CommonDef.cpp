@@ -1,54 +1,81 @@
-#ifndef _CommonDefine_H_
-#define _CommonDefine_H_
+#include "CommonDef.h"
 
-enum EventType
+FFmpegInit* FFmpegInit::m_pInstance = NULL;
+
+FormatType GetFormatTypeByAVCodecID(AVCodecID codecID)
 {
-	Data = 1,
-};
+	FormatType fmt = none;
+	switch (codecID)
+	{
+	case AV_CODEC_ID_H264:
+		fmt = h264;
+		break;
+	case AV_CODEC_ID_HEVC:
+		fmt = h265;
+		break;
+	case AV_CODEC_ID_AAC:
+		fmt = aaclc;
+		break;
+	case AV_CODEC_ID_PCM_ALAW:
+		fmt = g711a;
+		break;
+	case AV_CODEC_ID_PCM_MULAW:
+		fmt = g711u;
+		break;
+	case AV_CODEC_ID_OPUS:
+		fmt = opus;
+		break;
+	default:
+		break;
+	}
+	return fmt;
+}
 
-enum Record_State
+FFmpegInit::FFmpegInit()
 {
-	RS_Stop = 0,
-	RS_Record = 1,
-	RS_Pause = 2,
-	RS_Count,
-};
 
-enum MediaType
+}
+
+FFmpegInit::~FFmpegInit()
 {
-	Video = 0,
-	Audio = 1,
-};
 
-enum FormatType
+}
+
+FFmpegInit * FFmpegInit::Initialize()
 {
-	none = -2, // 当前流不存在
-	unkonwn = -1, // 不指定AVInputFormat，FFmpeg内部探测流编码格式
-	g711a = 19,
-	g711u = 20,
-	aaclc = 42,
-	h264 = 96,
-	h265 = 265,
-};
+	return FFmpegInit::GetInstance();
+}
 
-enum PixelFmt
+void FFmpegInit::Uninitialize()
 {
-	PF_NONE = 0,
-	PF_RGBA = 1,
-	PF_BGRA = 2,
-	PF_YUV420 = 3,
-	PF_YUV420P = 4,
-	PF_YUV422 = 5,
-	PF_YUV422P = 6,
-};
+	if (m_pInstance != NULL)
+	{
+		m_pInstance->UnInit();
+		delete m_pInstance;
+		m_pInstance = NULL;
+	}
+}
 
-enum SampleFmt
+FFmpegInit * FFmpegInit::GetInstance()
 {
-	SF_NONE	= 0,
-};
+	if (m_pInstance == NULL)
+	{
+		m_pInstance = new FFmpegInit;
+		m_pInstance->Init();
+	}
 
-//初始化和反初始化 FFmpeg库
-void	InitFFmpegModule();
-void	UninitFFmpegModule();
+	return m_pInstance;
+}
 
-#endif
+void FFmpegInit::Init()
+{
+	av_register_all();
+	avcodec_register_all();
+	avformat_network_init();
+}
+
+void FFmpegInit::UnInit()
+{
+	avformat_network_deinit();
+
+}
