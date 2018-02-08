@@ -107,6 +107,8 @@
     <ClInclude Include="..\..\Include\Common\RecordBase.h" />
     <ClInclude Include="..\TSRecord\TSMuxer.h" />
     <ClInclude Include="..\TSRecord\TSRecord.h" />
+    <ClInclude Include="FlvMuxer.h" />
+    <ClInclude Include="FlvRecord.h" />
     <ClInclude Include="PullStreamModule.h" />
     <ClInclude Include="PullStreamModulePro.h" />
     <ClInclude Include="PullStreamModuleDlg.h" />
@@ -125,6 +127,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\TSRecord\TSRecord.cpp" />
+    <ClCompile Include="FlvMuxer.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="FlvRecord.cpp" />
     <ClCompile Include="PullStreamModule.cpp" />
     <ClCompile Include="PullStreamModulePro.cpp" />
     <ClCompile Include="PullStreamModuleDlg.cpp" />

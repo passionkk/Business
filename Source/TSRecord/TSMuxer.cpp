@@ -1,3 +1,6 @@
+#if WIN32
+#include "stdafx.h"
+#endif
 #include <Poco/Clock.h>
 #include <assert.h>
 
@@ -498,6 +501,8 @@ void TSMuxer::run()
         }
 #ifdef WIN32
         iBaseTimestamp = min(iAFirstTimestamp, iVFirstTimestamp);
+		TRACE(L"[TSMuxer::run]iAFirstTimestamp is %I64u\n iVFirstTimestamp is %I64u\n iBaseTimestamp is %I64u.\n",
+			  iAFirstTimestamp, iVFirstTimestamp, iBaseTimestamp);
 #else
         iBaseTimestamp = std::min(iAFirstTimestamp, iVFirstTimestamp);
 #endif
@@ -607,20 +612,25 @@ void TSMuxer::run()
             m_iCurTimeduration = now.raw() - iNowTimestamp;
             m_iCurTimeduration /= 1000;
             if (av_write_frame(m_pOutFormatCtx, &pkt) < 0)
-            {
+			{
                 sError = "Error muxing packet";
                 break;
             }
             if (av_write_frame(m_pOutFormatCtx, NULL) < 0)
-            {
+			{
                 sError = "Error muxing packet";
                 break;
             }
-            // free AVPacket
-            if (pkt.data)
+			// free AVPacket
+			if (pkt.buf)
+			{ 
+				free(pkt.buf);
+			}
+			else if (pkt.data)
             {
                 free(pkt.data);
             }
+			av_packet_unref(&pkt);
         }
 
         av_write_trailer(m_pOutFormatCtx);
@@ -775,10 +785,11 @@ void TSMuxer::ReadAVFrame(
         if (iCurPts == pAVPacketData->iTimestamp - iReferenceTimestamp)
         {
             pkt->data = (uint8_t*)realloc(pkt->data,
-                pAVPacketData->iDataSize + pkt->size);
+						pAVPacketData->iDataSize + pkt->size /*+ AV_INPUT_BUFFER_PADDING_SIZE*/);
             memcpy(pkt->data + pkt->size,
                 pAVPacketData->pData, pAVPacketData->iDataSize);
-            pkt->size += pAVPacketData->iDataSize;
+			//memset(pkt->data + pAVPacketData->iDataSize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+			pkt->size += (pAVPacketData->iDataSize /*+ AV_INPUT_BUFFER_PADDING_SIZE*/);
             delete[] pAVPacketData->pData;
             delete pAVPacketData;
             Poco::Mutex::ScopedLock lock(m_DataMutex);

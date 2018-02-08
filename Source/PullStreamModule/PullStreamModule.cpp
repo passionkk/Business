@@ -293,7 +293,25 @@ bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetA
 					{
 						bRet = false;
 					}
-					if (m_pVFilterContext == NULL && bRet)
+
+					int64_t nValue = 0;
+					if (pCodecCtx && pCodecCtx->codec && pCodecCtx->codec->priv_class && bRet) {
+						const AVOption *opt = NULL;
+						while (opt = av_opt_next(pCodecCtx->priv_data, opt)) {
+							if (opt->flags) 
+								continue;
+							if (strcmp(opt->name, "is_avc") == 0)
+							{
+								if (av_opt_get_int(pCodecCtx->priv_data, opt->name, 0, &nValue) < 0)
+								{
+									printf("get is_avc error.\n");
+								}	
+								break;
+							}
+						}
+					}
+
+					if (m_pVFilterContext == NULL && bRet && nValue == 1)
 					{
 						switch (m_pFmtCtx->streams[m_nVidStreamIndex]->codec->codec_id)
 						{
@@ -317,12 +335,13 @@ bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetA
 			if (nStreamArray[AVMEDIA_TYPE_AUDIO] >= 0)
 			{
 				int nStreamIndex = m_nAudStreamIndex = nStreamArray[AVMEDIA_TYPE_AUDIO];
-				AVCodecContext* pCodecCtx = pFormatCtx->streams[nStreamIndex]->codec; //avcodec_alloc_context3(NULL);
+				AVCodecContext* pCodecCtx = pFormatCtx->streams[nStreamIndex]->codec;
 				if (avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[nStreamIndex]->codecpar) < 0)
 				{
 					avcodec_free_context(&pCodecCtx);
 					bRet = false;
 				}
+				char szFourcc[AV_FOURCC_MAX_STRING_SIZE] = { 0 };
 				m_stVAFileInfo.bHasAudio = true;
 				m_stVAFileInfo.sAudioInfo.eCodecID = pCodecCtx->codec_id;
 				m_stVAFileInfo.sAudioInfo.eSampleFormat = pCodecCtx->sample_fmt;
@@ -469,40 +488,6 @@ void PullStreamModule::OnHandleVData()
 		{
 			Poco::Mutex::ScopedLock lock(m_mutexVideoDeque);
 			
-#if 0
-			//if (pPkt->pts >= iLastPts)
-			//{
-				bool bFindFirstKeyPkt = false;
-				bool bFindNextKeyPkt = false;
-				int nKeyPkt = 2;
-				std::deque<AVPacket*>::iterator itSecKeyPkt = m_dequeVideoPkt.begin();
-				std::deque<AVPacket*>::iterator itFirstKeyPkt = m_dequeVideoPkt.begin();
-				for (itSecKeyPkt; itSecKeyPkt != m_dequeVideoPkt.end(); itSecKeyPkt++)
-				{
-					if ((*itSecKeyPkt)->flags & AV_PKT_FLAG_KEY)
-					{
-						--nKeyPkt;
-						if (nKeyPkt == 1 && !bFindFirstKeyPkt)
-						{
-							bFindFirstKeyPkt = true;
-							itFirstKeyPkt = itSecKeyPkt;
-						}
-						else if (nKeyPkt == 0)
-							break;
-					}
-				}
-				if (nKeyPkt == 0 && itSecKeyPkt != m_dequeVideoPkt.end() && itFirstKeyPkt != m_dequeVideoPkt.begin())
-				{
-					std::sort(m_dequeVideoPkt.begin(), itSecKeyPkt, SortByPts);
-					iLastPts = (*itSecKeyPkt)->pts;
-				}
-				else if (nKeyPkt >= 1)
-				{
-					Poco::Thread::sleep(1);
-					continue;
-				}
-			//}
-#endif
 			AVPacket* pPkt = m_dequeVideoPkt.front();
 #if WIN32
 			//TRACE(L"[PullStreamModule::OnHandleVData]V pkt pts : %lld, size : %d.\n", pPkt->pts, pPkt->size);

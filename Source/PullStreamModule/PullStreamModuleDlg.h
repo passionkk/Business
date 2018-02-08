@@ -6,6 +6,8 @@
 
 #include "PullStreamModule.h"
 #include "../TSRecord/TSRecord.h"
+#include "FlvRecord.h"
+#include "afxwin.h"
 
 // CPullStreamModuleDlg ¶Ô»°¿ò
 class CPullStreamModuleDlg : public CDialogEx
@@ -34,6 +36,10 @@ protected:
 	afx_msg void OnClose();
 	afx_msg void OnBnClickedBtnStartRecord();
 	afx_msg void OnBnClickedBtnStopRecord();
+	afx_msg void OnBnClickedBtnPauseRecord();
+	afx_msg void OnBnClickedBtnResumeRecord3();
+	afx_msg void OnBnClickedRadioRecordType();
+
 	DECLARE_MESSAGE_MAP()
 
 public:
@@ -53,10 +59,14 @@ public:
 				uint64_t iPts /*ms*/,
 				uint64_t iDts);
 
+	void InitCtrl();
 public:
 	PullStreamModule	m_rmtpModule;
 	TSRecord			m_TSRecord;
+	RecordBase*			m_pRecord;
 	bool				m_bStartRecord;
-	afx_msg void OnBnClickedBtnPauseRecord();
-	afx_msg void OnBnClickedBtnResumeRecord3();
+	CComboBox m_cmbUrl;
+	CComboBox m_cmbAudioType;
+	CComboBox m_cmbVideoType;
+	int m_radioRecFileType;
 };

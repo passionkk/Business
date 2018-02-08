@@ -22,14 +22,15 @@ enum MediaType
 
 enum FormatType
 {
-	none = -2, // 当前流不存在
+	none	= -2, // 当前流不存在
 	unkonwn = -1, // 不指定AVInputFormat，FFmpeg内部探测流编码格式
-	g711a = 19,
-	g711u = 20,
-	opus  = 21,	//可能不对
-	aaclc = 42,
-	h264 = 96,
-	h265 = 265,
+	g711a	= 19,
+	g711u	= 20,
+	opus	= 21,	//可能不对
+	aaclc	= 42,
+	mp3		= 42,
+	h264	= 96,
+	h265	= 265,
 };
 
 enum PixelFmt
@@ -53,6 +54,7 @@ extern "C"
 	#include "libavformat/avformat.h"
 	#include "libavcodec/avcodec.h"
 	#include "libavutil/avutil.h"
+	#include "libavutil/opt.h"
 }
 
 #ifdef WIN32

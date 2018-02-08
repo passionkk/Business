@@ -19,7 +19,13 @@
     <Filter Include="TSRecord">
       <UniqueIdentifier>{4d2837a1-9795-4ab1-a4b4-95a45a3e2908}</UniqueIdentifier>
     </Filter>
-    <Filter Include="TSModule">
+    <Filter Include="FlvModule">
+      <UniqueIdentifier>{ea9f79fb-9001-46d9-b289-f7cb7aa035b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Mp3Module">
+      <UniqueIdentifier>{19d0349a-4f54-426d-80fa-f07dd02de30f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="RecordModule">
       <UniqueIdentifier>{ff77294f-db88-4c28-9f3f-2f4303ccdc55}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -49,13 +55,19 @@
       <Filter>PullStreamModule</Filter>
     </ClInclude>
     <ClInclude Include="..\..\Include\Common\RecordBase.h">
-      <Filter>TSModule</Filter>
+      <Filter>RecordModule</Filter>
     </ClInclude>
     <ClInclude Include="..\TSRecord\TSMuxer.h">
       <Filter>TSRecord</Filter>
     </ClInclude>
     <ClInclude Include="..\TSRecord\TSRecord.h">
       <Filter>TSRecord</Filter>
+    </ClInclude>
+    <ClInclude Include="FlvMuxer.h">
+      <Filter>FlvModule</Filter>
+    </ClInclude>
+    <ClInclude Include="FlvRecord.h">
+      <Filter>FlvModule</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -75,13 +87,19 @@
       <Filter>PullStreamModule</Filter>
     </ClCompile>
     <ClCompile Include="..\..\Include\Common\RecordBase.cpp">
-      <Filter>TSModule</Filter>
+      <Filter>RecordModule</Filter>
     </ClCompile>
     <ClCompile Include="..\TSRecord\TSMuxer.cpp">
       <Filter>TSRecord</Filter>
     </ClCompile>
     <ClCompile Include="..\TSRecord\TSRecord.cpp">
       <Filter>TSRecord</Filter>
+    </ClCompile>
+    <ClCompile Include="FlvMuxer.cpp">
+      <Filter>FlvModule</Filter>
+    </ClCompile>
+    <ClCompile Include="FlvRecord.cpp">
+      <Filter>FlvModule</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
