@@ -69,6 +69,12 @@
     <ClInclude Include="FlvRecord.h">
       <Filter>FlvModule</Filter>
     </ClInclude>
+    <ClInclude Include="Mp3Muxer.h">
+      <Filter>Mp3Module</Filter>
+    </ClInclude>
+    <ClInclude Include="Mp3Record.h">
+      <Filter>Mp3Module</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="PullStreamModuleDlg.cpp">
@@ -100,6 +106,12 @@
     </ClCompile>
     <ClCompile Include="FlvRecord.cpp">
       <Filter>FlvModule</Filter>
+    </ClCompile>
+    <ClCompile Include="Mp3Muxer.cpp">
+      <Filter>Mp3Module</Filter>
+    </ClCompile>
+    <ClCompile Include="Mp3Record.cpp">
+      <Filter>Mp3Module</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

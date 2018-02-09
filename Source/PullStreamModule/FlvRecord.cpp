@@ -7,13 +7,19 @@ FlvRecord::FlvRecord()
 	, m_i64StartRecord(0)
 	, m_bEnableVideo(true)
 	, m_bEnableAudio(true)
+	, m_bFirstPacket(true)
+	, m_nHeaderDataLen(1024)
 {
+	m_pHeaderData = new unsigned char[m_nHeaderDataLen];
 	m_TSMuxer.Subscribe(this, NULL);
 }
 
 
 FlvRecord::~FlvRecord()
 {
+	if (m_pHeaderData != nullptr)
+		delete[] m_pHeaderData;
+	m_pHeaderData = NULL;
 }
 
 bool FlvRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, uint64_t iTimestamp, uint64_t iTimestampDTS)
@@ -46,6 +52,7 @@ bool FlvRecord::Start(FormatType eAFormatType, FormatType eVFormatType, const st
 		{
 			m_strAbFilePath = strAbFilePath;
 			m_bStop = false;
+			m_bFirstPacket = true;
 			m_thread.start(*this);
 			m_RecordState = RS_Record;
 		}
@@ -155,9 +162,31 @@ void FlvRecord::run()
 			m_nPausedTime = 0;
 			m_nRecordedDuration = 0;
 			bCloseFile = false;
+			if (!m_bFirstPacket)
+			{
+				WriteHeader(flvFStream);
+#if WIN32
+				TRACE(L"[FlvRecord::run]write Header.\n");
+#endif
+			}
 		}
 		Poco::Mutex::ScopedLock lock(m_DataMutex);
 		pPacket = m_TSPacketDatas.front();
+		if (m_bFirstPacket)
+		{
+			m_bFirstPacket = false;
+			if (m_nHeaderDataLen < pPacket->iDataSize)
+			{
+				if (m_pHeaderData != nullptr)
+				{
+					delete[] m_pHeaderData;
+				}
+				m_nHeaderDataLen = pPacket->iDataSize;
+				m_pHeaderData = new unsigned char[m_nHeaderDataLen];
+			}
+			m_nHeaderDataLen = pPacket->iDataSize;
+			memcpy(m_pHeaderData, pPacket->pData, m_nHeaderDataLen);
+		}
 		flvFStream.write((const char*)pPacket->pData, pPacket->iDataSize);
 		m_nRecordedSize += pPacket->iDataSize;
 		if (m_nSplitType == 0)
@@ -193,7 +222,7 @@ void FlvRecord::run()
 		flvFStream.close();
 }
 
-int FlvRecord::WriteHeader(Poco::FileStream& flvFStream)
+int FlvRecord::WriteHeader(Poco::FileStream& flvFStream, uint64_t uintPts)
 {
 	int nRet = 0;
 	//FLV Header
@@ -213,6 +242,32 @@ int FlvRecord::WriteHeader(Poco::FileStream& flvFStream)
 	//Previous Tag Size 前一个Tag的长度
 	flvFStream.write("0000", 4);
 	
+	//MetaData
+	/* write meta_tag */
+	ch = FLV_TAG_TYPE_META; // tag type META
+	strWrite.clear();
+	strWrite = ch;
+	flvFStream.write(strWrite.c_str(), 1);
+
+	//flv->metadata_size_pos = avio_tell(pb);
+	flvFStream.write("000", 3);// size of data part (sum of all parts below)
+
+	//avio_wb24(pb, ts);          // timestamp
+	//avio_wb32(pb, 0);           // reserved
+
+	//CodecHeader
+
+	return nRet;
+}
+
+int FlvRecord::WriteHeader(Poco::FileStream& flvStream)
+{
+	int nRet = -1;
+	if (m_pHeaderData && m_nHeaderDataLen > 0)
+	{
+		flvStream.write((const char*)m_pHeaderData, m_nHeaderDataLen);
+		nRet = 0;
+	}
 	return nRet;
 }
 

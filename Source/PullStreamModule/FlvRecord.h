@@ -70,8 +70,10 @@ protected:
 	// get ts data from deque then write to file and split file if need.
 	void run();
 
-	int WriteHeader(Poco::FileStream& flvFStream);
+	int WriteHeader(Poco::FileStream& flvStream);
 	int WriteTailer(Poco::FileStream& flvFStream);
+
+	int WriteHeader(Poco::FileStream& flvFStream, uint64_t uintPts);
 
 private:
 	// release resource
@@ -89,6 +91,9 @@ private:
 	Poco::Clock			m_clkPauseOnce; //用于计算暂停一次的持续时长
 	bool				m_bEnableVideo;
 	bool				m_bEnableAudio;
+	bool				m_bFirstPacket;
+	unsigned char*		m_pHeaderData;
+	int					m_nHeaderDataLen;
 };
 
 #endif
