@@ -83,7 +83,7 @@ private:
 	Poco::Thread		m_thread;
 	Mp3Muxer			m_mp3Muxer;
 	Poco::Mutex			m_DataMutex;
-	std::deque<Mp3PacketData *> m_TSPacketDatas;
+	std::deque<Mp3PacketData *> m_mp3PacketDatas;
 	uint64_t			m_i64StartRecord;
 	Poco::Clock			m_clkPauseOnce; //用于计算暂停一次的持续时长
 	bool				m_bEnableVideo;

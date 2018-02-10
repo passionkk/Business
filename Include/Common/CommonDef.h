@@ -27,8 +27,9 @@ enum FormatType
 	g711a	= 19,
 	g711u	= 20,
 	opus	= 21,	//可能不对
+	mp3		= 41,	//新增加的mp3
 	aaclc	= 42,
-	mp3		= 42,
+	png		= 90,	//mp3中封面编码png
 	h264	= 96,
 	h265	= 265,
 };

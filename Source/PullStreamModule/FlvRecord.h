@@ -84,9 +84,9 @@ private:
 private:
 	bool				m_bStop;
 	Poco::Thread		m_thread;
-	FlvMuxer				m_TSMuxer;
+	FlvMuxer				m_FlvMuxer;
 	Poco::Mutex			m_DataMutex;
-	std::deque<FlvPacketData *> m_TSPacketDatas;
+	std::deque<FlvPacketData *> m_FlvPacketDatas;
 	uint64_t			m_i64StartRecord;
 	Poco::Clock			m_clkPauseOnce; //用于计算暂停一次的持续时长
 	bool				m_bEnableVideo;

@@ -64,7 +64,7 @@ public:
 	void UnSubscribe(RtmpDataIface *pDataInstance);
 
 	// 打开流
-	bool	OpenStream(std::string strUrl, bool bGetVideo = true, bool bGetAudio = true, bool bIsReconnect = false);
+	bool	OpenStream(std::string strUrl, bool bGetVideo = true, bool bGetAudio = true, bool bAutoReconnect = true, bool bIsReconnect = false);
 
 	// 关闭流
 	bool	CloseStream(bool bIsReconnect = false);
@@ -113,6 +113,7 @@ protected:
 	bool			m_bGetAudio;
 	bool			m_bGetVideo;
 	
+	bool			m_bAutoReconnect;
 	int				m_nReconnectInterval;//重连间隔时长
 
 	stVAInfo		m_stVAFileInfo;

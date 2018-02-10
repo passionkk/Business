@@ -11,7 +11,7 @@ FlvRecord::FlvRecord()
 	, m_nHeaderDataLen(1024)
 {
 	m_pHeaderData = new unsigned char[m_nHeaderDataLen];
-	m_TSMuxer.Subscribe(this, NULL);
+	m_FlvMuxer.Subscribe(this, NULL);
 }
 
 
@@ -29,7 +29,7 @@ bool FlvRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uin
 #if WIN32
 		//TRACE(L"[FlvRecord::ImportAVPacket]eMediaType is %d, iTimestamp is %lld, iTimestampDTS is %lld.\n", eMediaType, iTimestamp, iTimestampDTS);
 #endif
-		return m_TSMuxer.ImportAVPacket(eMediaType, eFormatType, pData, iDataSize, iTimestamp, iTimestampDTS);// iTimestampDTS);
+		return m_FlvMuxer.ImportAVPacket(eMediaType, eFormatType, pData, iDataSize, iTimestamp, iTimestampDTS);// iTimestampDTS);
 	}
 	return false;
 }
@@ -38,7 +38,7 @@ bool FlvRecord::Start(FormatType eAFormatType, FormatType eVFormatType, const st
 {
 	bool bRet = false;
 
-	if (!m_TSMuxer.IsRunning() && m_thread.isRunning())
+	if (!m_FlvMuxer.IsRunning() && m_thread.isRunning())
 		Stop();
 
 	if (!m_thread.isRunning())
@@ -47,7 +47,7 @@ bool FlvRecord::Start(FormatType eAFormatType, FormatType eVFormatType, const st
 			m_bEnableAudio = false;
 		if (eVFormatType == none)
 			m_bEnableVideo = false;
-		bRet = m_TSMuxer.Start(eAFormatType, eVFormatType);
+		bRet = m_FlvMuxer.Start(eAFormatType, eVFormatType);
 		if (bRet)
 		{
 			m_strAbFilePath = strAbFilePath;
@@ -68,7 +68,7 @@ void FlvRecord::Stop()
 		return;
 	}
 	m_bStop = true;
-	m_TSMuxer.Stop();
+	m_FlvMuxer.Stop();
 	m_thread.join();
 	m_nPausedTime = 0;
 	m_nRecordedDuration = 0;
@@ -112,7 +112,7 @@ bool FlvRecord::Resume()
 
 bool FlvRecord::IsRunning() const
 {
-	return m_thread.isRunning() && m_TSMuxer.IsRunning();
+	return m_thread.isRunning() && m_FlvMuxer.IsRunning();
 }
 
 void FlvRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, uint64_t iPts/*, uint64_t iDts*/)
@@ -128,7 +128,7 @@ void FlvRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen,
 		memcpy(pTSPacketData->pData, pData, iLen);
 		{
 			Poco::Mutex::ScopedLock lock(m_DataMutex);
-			m_TSPacketDatas.push_back(pTSPacketData);
+			m_FlvPacketDatas.push_back(pTSPacketData);
 		}
 	}
 }
@@ -145,7 +145,7 @@ void FlvRecord::run()
 	while (!m_bStop)
 	{
 		m_DataMutex.lock();
-		bEmpty = m_TSPacketDatas.empty();
+		bEmpty = m_FlvPacketDatas.empty();
 		m_DataMutex.unlock();
 		if (bEmpty && !m_bStop)
 		{
@@ -171,7 +171,7 @@ void FlvRecord::run()
 			}
 		}
 		Poco::Mutex::ScopedLock lock(m_DataMutex);
-		pPacket = m_TSPacketDatas.front();
+		pPacket = m_FlvPacketDatas.front();
 		if (m_bFirstPacket)
 		{
 			m_bFirstPacket = false;
@@ -216,7 +216,7 @@ void FlvRecord::run()
 
 		delete[] pPacket->pData;
 		delete pPacket;
-		m_TSPacketDatas.pop_front();
+		m_FlvPacketDatas.pop_front();
 	}
 	if(!bCloseFile)
 		flvFStream.close();
@@ -280,12 +280,12 @@ int FlvRecord::WriteTailer(Poco::FileStream& flvFStream)
 void FlvRecord::Destroy()
 {
 	Poco::Mutex::ScopedLock lock(m_DataMutex);
-	for (int i = 0; i < m_TSPacketDatas.size(); ++i)
+	for (int i = 0; i < m_FlvPacketDatas.size(); ++i)
 	{
-		delete[] m_TSPacketDatas[i]->pData;
-		delete m_TSPacketDatas[i];
+		delete[] m_FlvPacketDatas[i]->pData;
+		delete m_FlvPacketDatas[i];
 	}
-	m_TSPacketDatas.clear();
+	m_FlvPacketDatas.clear();
 }
 
 std::string FlvRecord::GenerateFilePath()

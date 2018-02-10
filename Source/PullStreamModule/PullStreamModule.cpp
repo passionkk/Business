@@ -117,6 +117,7 @@ PullStreamModule::PullStreamModule()
 	, m_nReconnectInterval(5)
 	, m_pVFilterContext(NULL)
 	, m_pAFilterContext(NULL)
+	, m_bAutoReconnect(true)
 {
 	m_dequeVideoPkt.clear();
 	m_dequeAudioPkt.clear();
@@ -170,8 +171,13 @@ void PullStreamModule::run()
 			{
 				//end of file or error need reconnect
 				CloseStream(true);
-				Poco::Thread::sleep(m_nReconnectInterval * 1000);
-				OpenStream(m_strUrl, m_bGetVideo, m_bGetAudio, true);
+				if (m_bAutoReconnect)
+				{
+					Poco::Thread::sleep(m_nReconnectInterval * 1000);
+					OpenStream(m_strUrl, m_bGetVideo, m_bGetAudio, m_bAutoReconnect, true);
+				}
+				else
+					break;
 			}
 			else
 			{
@@ -232,7 +238,7 @@ void PullStreamModule::run()
 	}
 }
 
-bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetAudio, bool bIsReconnect)
+bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetAudio, bool bAutoReconnect, bool bIsReconnect)
 {
 	bool bRet = true;
 	if (!bIsReconnect)
@@ -240,6 +246,7 @@ bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetA
 		if (m_bOpenStream == true)
 			return false;
 		m_bOpenStream = false;
+		m_bAutoReconnect = bAutoReconnect;
 	}
 	if (m_pFmtCtx == NULL)
 		m_pFmtCtx = avformat_alloc_context();

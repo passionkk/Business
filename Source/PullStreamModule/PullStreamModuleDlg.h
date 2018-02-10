@@ -7,6 +7,7 @@
 #include "PullStreamModule.h"
 #include "../TSRecord/TSRecord.h"
 #include "FlvRecord.h"
+#include "Mp3Record.h"
 #include "afxwin.h"
 
 // CPullStreamModuleDlg ¶Ô»°¿ò

@@ -218,7 +218,9 @@ void CPullStreamModuleDlg::OnBnClickedBtnOpenStream()
 
 	std::string sUrl = CT2A(strText);
 
-	if (m_rmtpModule.OpenStream(sUrl, true, true))
+	bool bAutoReconnect = (BST_CHECKED == ((CButton *)GetDlgItem(IDC_CHECK_AUTORECONNECT))->GetCheck());
+
+	if (m_rmtpModule.OpenStream(sUrl, true, true, bAutoReconnect))
 		TRACE(L"[拉流成功].\n");
 	else
 		TRACE(L"[拉流失败].\n");
@@ -249,7 +251,8 @@ void CPullStreamModuleDlg::OnClose()
 void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 {
 	FormatType eAudio, eVideo;
-	
+	std::string strRecordPath = "";
+
 	switch (m_cmbAudioType.GetCurSel())
 	{
 	case 0:
@@ -284,7 +287,7 @@ void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 		eVideo = h265;
 		break;
 	case 2:
-		eVideo = none;
+		eVideo = png;
 		break;
 	default:
 		eVideo = none;
@@ -302,12 +305,15 @@ void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 	{
 	case 0:
 		m_pRecord = new TSRecord;
+		strRecordPath = "./RecordFile/Record.ts";
 		break;
 	case 1:
 		m_pRecord = new FlvRecord;
+		strRecordPath = "./RecordFile/Record.flv";
 		break;
 	case 2:
-		//m_pRecord = new Mp3Record;
+		m_pRecord = new Mp3Record;
+		strRecordPath = "./RecordFile/Record.mp3";
 		break;
 	default:
 		m_pRecord = new TSRecord;
@@ -315,7 +321,7 @@ void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 	}
 	
 	//if (m_TSRecord.Start(eAudio, eVideo, "./RecordFile/Record.ts"))
-	if (m_pRecord->Start(eAudio, eVideo, "./RecordFile/Record.ts"))
+	if (m_pRecord->Start(eAudio, eVideo, strRecordPath))
 	{
 		if (BST_CHECKED == ((CButton *)GetDlgItem(IDC_RADIO_TIME))->GetCheck())
 		{
@@ -364,13 +370,12 @@ void CPullStreamModuleDlg::OnBnClickedBtnResumeRecord3()
 	{
 		if (m_pRecord)
 			m_pRecord->Resume();
-		//m_TSRecord.Resume();
 		
 		Poco::Clock clk = g_clock;
 		g_clock.update();
 		int64_t iDiffer = g_clock - clk;
 		clk.update();
-		int nTest = iDiffer / 1000 / 1000;
+		int nTest = int(iDiffer / 1000 / 1000);
 		TRACE(L"pause %d sec.\n", nTest);
 	}
 }
@@ -395,6 +400,7 @@ void CPullStreamModuleDlg::InitCtrl()
 	int nVIndex = m_cmbVideoType.GetCount();
 	m_cmbVideoType.InsertString(nVIndex++, L"h264");
 	m_cmbVideoType.InsertString(nVIndex++, L"h265");
+	m_cmbVideoType.InsertString(nVIndex++, L"png");
 	m_cmbVideoType.InsertString(nVIndex++, L"none");
 	m_cmbVideoType.SetCurSel(0);
 
@@ -414,6 +420,9 @@ void CPullStreamModuleDlg::InitCtrl()
 	strUrl = _T("D:\\测试素材\\Media\\mp4\\H264-1VA0-FRAME.mp4");
 	m_cmbUrl.InsertString(nIndex++, strUrl);
 
+	strUrl = _T("./4 Non Blondes - What's Up.mp3");
+	m_cmbUrl.InsertString(nIndex++, strUrl);
+
 	strUrl = _T("rtmp://v1.one-tv.com/live/mpegts.stream");
 	m_cmbUrl.InsertString(nIndex++, strUrl);
 	
@@ -424,8 +433,6 @@ void CPullStreamModuleDlg::InitCtrl()
 	m_cmbUrl.InsertString(nIndex++, strUrl);
 
 	m_cmbUrl.SetCurSel(0);
-
-
 }
 
 void CPullStreamModuleDlg::OnBnClickedRadioRecordType()

@@ -82,6 +82,8 @@ public:
     // 后台线程是否运行
     bool IsRunning() const;
 
+	AVFormatContext* GetOutputFmtCtx();
+
 public:
     // 仅供内部回调函数使用
     int ReadAVData(uint8_t *pBuf, int iBufSize, MediaType eType);
@@ -107,12 +109,6 @@ private:
         std::deque<AVPacketData *> *pAVPacketDataDeque);
 
     void SetAVPacketFlag(AVPacket *pkt, MediaType eType);
-
-    const char * GetNal(
-        const char *sData,
-        int iDataSize,
-        int *iRelativePos,
-        int *iNalSize);
 
 private:
     Poco::Thread m_RoutineThread;
@@ -144,9 +140,6 @@ private:
     Poco::Mutex m_CallbackMutex;
     Poco::Mutex m_DataMutex;
     Poco::Event m_ConsumeEvent;
-
-	AVBitStreamFilterContext* m_pVFilterContext;
-	AVBitStreamFilterContext* m_pAFilterContext;
 };
 
 #endif // _Mp3Muxer_H_

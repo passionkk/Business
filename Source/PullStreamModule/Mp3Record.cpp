@@ -124,11 +124,10 @@ void Mp3Record::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen,
 		pTSPacketData->iDataSize = iLen;
 		pTSPacketData->iOffset = 0;
 		pTSPacketData->iTimeCode = iPts;
-		//pTSPacketData->iTimeCodeDTS = iDts;
 		memcpy(pTSPacketData->pData, pData, iLen);
 		{
 			Poco::Mutex::ScopedLock lock(m_DataMutex);
-			m_TSPacketDatas.push_back(pTSPacketData);
+			m_mp3PacketDatas.push_back(pTSPacketData);
 		}
 	}
 }
@@ -145,7 +144,7 @@ void Mp3Record::run()
 	while (!m_bStop)
 	{
 		m_DataMutex.lock();
-		bEmpty = m_TSPacketDatas.empty();
+		bEmpty = m_mp3PacketDatas.empty();
 		m_DataMutex.unlock();
 		if (bEmpty && !m_bStop)
 		{
@@ -164,14 +163,14 @@ void Mp3Record::run()
 			bCloseFile = false;
 			if (!m_bFirstPacket)
 			{
-				WriteHeader(flvFStream);
+				//WriteHeader(flvFStream);
 #if WIN32
 				TRACE(L"[FlvRecord::run]write Header.\n");
 #endif
 			}
 		}
 		Poco::Mutex::ScopedLock lock(m_DataMutex);
-		pPacket = m_TSPacketDatas.front();
+		pPacket = m_mp3PacketDatas.front();
 		if (m_bFirstPacket)
 		{
 			m_bFirstPacket = false;
@@ -216,7 +215,7 @@ void Mp3Record::run()
 
 		delete[] pPacket->pData;
 		delete pPacket;
-		m_TSPacketDatas.pop_front();
+		m_mp3PacketDatas.pop_front();
 	}
 	if(!bCloseFile)
 		flvFStream.close();
@@ -242,12 +241,12 @@ int Mp3Record::WriteTailer(Poco::FileStream& flvFStream)
 void Mp3Record::Destroy()
 {
 	Poco::Mutex::ScopedLock lock(m_DataMutex);
-	for (int i = 0; i < m_TSPacketDatas.size(); ++i)
+	for (int i = 0; i < m_mp3PacketDatas.size(); ++i)
 	{
-		delete[] m_TSPacketDatas[i]->pData;
-		delete m_TSPacketDatas[i];
+		delete[] m_mp3PacketDatas[i]->pData;
+		delete m_mp3PacketDatas[i];
 	}
-	m_TSPacketDatas.clear();
+	m_mp3PacketDatas.clear();
 }
 
 std::string Mp3Record::GenerateFilePath()

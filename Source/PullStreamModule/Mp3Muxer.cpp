@@ -43,8 +43,6 @@ Mp3Muxer::Mp3Muxer()
 , m_bTerminateConsume(true)
 , m_iBufferSize(188 * 200)
 , m_iCurTimeduration(0)
-, m_pVFilterContext(NULL)
-, m_pAFilterContext(NULL)
 {
 
 }
@@ -206,7 +204,7 @@ bool Mp3Muxer::Start(
             m_pInFormatCtxV->pb = m_pAVIOCtxV;
         }
 
-        avformat_alloc_output_context2(&m_pOutFormatCtx, NULL, "flv", NULL);
+        avformat_alloc_output_context2(&m_pOutFormatCtx, NULL, "mp3", NULL);
         uint8_t * pBuffer = (uint8_t *)av_malloc(m_iBufferSize);
 
         m_pAVIOCtxOut = avio_alloc_context(pBuffer, m_iBufferSize,
@@ -251,6 +249,14 @@ bool Mp3Muxer::IsRunning() const
     return m_RoutineThread.isRunning();
 }
 
+AVFormatContext* Mp3Muxer::GetOutputFmtCtx()
+{
+	if (m_pOutFormatCtx)
+		return m_pOutFormatCtx;
+	else
+		return nullptr;
+}
+
 int Mp3Muxer::ReadAVData(uint8_t *pBuf, int iBufSize, MediaType eType)
 {
     int iReadSize = 0;
@@ -283,7 +289,6 @@ int Mp3Muxer::ReadAVData(uint8_t *pBuf, int iBufSize, MediaType eType)
                         iReadSize = std::min(pAVPacketData->iDataSize -
                             pAVPacketData->iProbeOffset, iBufSize);
 #endif
-
                         pAVPacketData->iProbeOffset += iReadSize;
                         break;
                     }
@@ -413,12 +418,6 @@ void Mp3Muxer::run()
                 break;
             }
             avcodec_free_context(&pCodecCtx);
-			if (outAStream->codecpar->codec_id == AV_CODEC_ID_AAC)
-			{
-				if (m_pAFilterContext)
-					av_bitstream_filter_close(m_pAFilterContext);
-				m_pAFilterContext = av_bitstream_filter_init("aac_adtstoasc");
-			}
         }        
 
         if (m_eVFormatType != none)
@@ -430,6 +429,7 @@ void Mp3Muxer::run()
                 break;
             }
             bHasVideo = true;
+
             m_bFCtxVOpened = true;
             if (avformat_find_stream_info(m_pInFormatCtxV, 0) < 0)
             {
@@ -651,14 +651,12 @@ void Mp3Muxer::run()
 
 bool Mp3Muxer::CheckAudioType(FormatType eAType)
 {
-    return (g711a == eAType || g711u == eAType ||
-        aaclc == eAType || none == eAType || unkonwn == eAType);
+    return (mp3 == eAType || none == eAType || unkonwn == eAType);
 }
 
 bool Mp3Muxer::CheckVideoType(FormatType eVType)
 {
-    return (h264 == eVType || h265 == eVType ||
-        none == eVType || unkonwn == eVType);
+    return (png == eVType || none == eVType || unkonwn == eVType);
 }
 
 void Mp3Muxer::Destroy()
@@ -741,6 +739,12 @@ AVInputFormat *Mp3Muxer::GetAVInputFormat(FormatType eType)
     case aaclc:
         pInputFormat = av_find_input_format("aac");
         break;
+	case mp3:
+		pInputFormat = av_find_input_format("mp3");
+		break;
+	case png:
+		pInputFormat = av_find_input_format("image2");
+		break;
     case h264:
         pInputFormat = av_find_input_format("h264");
         break;
@@ -806,127 +810,6 @@ void Mp3Muxer::ReadAVFrame(
 
 void Mp3Muxer::SetAVPacketFlag(AVPacket *pkt, MediaType eType)
 {
-    if (eType == Audio)
-    {
-        pkt->flags |= AV_PKT_FLAG_KEY;
-		if (m_pAFilterContext)
-		{
-			av_bitstream_filter_filter(m_pAFilterContext, m_pInFormatCtxA->streams[0]->codec, NULL,
-									   &pkt->data, &pkt->size, pkt->data, pkt->size, pkt->flags & AV_PKT_FLAG_KEY);
-		}
-	}
-    else if (eType == Video)
-    {
-        int iCurDataPos = 0;
-        int iLeftDataSize = pkt->size;
-        int iRelativePos = 0;
-        int iNalSize = 0;
-        while (GetNal((char*)(pkt->data + iCurDataPos),
-            iLeftDataSize, &iRelativePos, &iNalSize) != NULL)
-        {
-            uint8_t * pNalData = pkt->data + iCurDataPos + iRelativePos;
-            int iNalType = 0;
-            if (pNalData[3] == 0x01)
-            {
-                iNalType = pNalData[4] & 0x1F;
-            }
-            else if (pNalData[2] == 0x01)
-            {
-                iNalType = pNalData[3] & 0x1F;
-            }
-            if (iNalType == 5) //I
-            {
-                pkt->flags |= AV_PKT_FLAG_KEY;
-                break;
-            }
-            else if (iNalType == 1) //P
-            {
-                pkt->flags = 0;
-                break;
-            }
-            iLeftDataSize -= iNalSize;
-            iCurDataPos += iNalSize;
-        }
-    }
+    pkt->flags |= AV_PKT_FLAG_KEY;
 }
 
-const char * Mp3Muxer::GetNal(
-    const char *sData,
-    int iDataSize,
-    int *iRelativePos,
-    int *iNalSize)
-{
-    int iCurPos = 0;
-    bool bFindNal = false;
-    if (iRelativePos == NULL || iNalSize == NULL)
-    {
-        return NULL;
-    }
-
-    while (iCurPos + 3 < iDataSize)
-    {
-        if (
-            (
-            (sData[iCurPos] == 0x00)
-            && (sData[iCurPos + 1] == 0x00)
-            && (sData[iCurPos + 2] == 0x00)
-            && (sData[iCurPos + 3] == 0x01)
-            )
-            ||
-            (
-            (sData[iCurPos] == 0x00)
-            && (sData[iCurPos + 1] == 0x00)
-            && (sData[iCurPos + 2] == 0x01)
-            )
-            )
-        {
-            *iRelativePos = iCurPos;
-            bFindNal = true;
-            break;
-        }
-        else
-        {
-            iCurPos++;
-        }
-    }
-
-    if (bFindNal)
-    {
-        iCurPos += 2;//skip 2
-        while (iCurPos + 3 < iDataSize)
-        {
-            if (
-                (
-                (sData[iCurPos] == 0x00)
-                && (sData[iCurPos + 1] == 0x00)
-                && (sData[iCurPos + 2] == 0x00)
-                && (sData[iCurPos + 3] == 0x01)
-                )
-                ||
-                (
-                (sData[iCurPos] == 0x00)
-                && (sData[iCurPos + 1] == 0x00)
-                && (sData[iCurPos + 2] == 0x01)
-                )
-                )
-            {
-                break;
-            }
-            else
-            {
-                iCurPos++;
-            }
-        }
-        if (iCurPos + 3 >= iDataSize)
-        {
-            *iNalSize = iDataSize - (*iRelativePos);
-        }
-        else
-        {
-            *iNalSize = iCurPos - (*iRelativePos);
-        }
-        return sData + (*iRelativePos);
-    }
-
-    return NULL;
-}
