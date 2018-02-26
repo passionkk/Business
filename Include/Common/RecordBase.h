@@ -25,8 +25,8 @@ public:
 		FormatType eFormatType,
 		uint8_t *pData,
 		int iDataSize,
-		uint64_t iTimestamp /*us*/,
-		uint64_t iTimestampDTS) = 0;
+		int64_t iTimestamp /*us*/,
+		int64_t iTimestampDTS) = 0;
 
 	// 开始
 	virtual bool Start(
@@ -55,7 +55,7 @@ protected:
 	int				m_nSplitDuration;		//分割时长
 	int				m_nSplitSize;			//分割大小
 	Record_State	m_RecordState;			//录制状态
-	uint64_t		m_nRecordedDuration;	//已录制时长
+	int64_t			m_nRecordedDuration;	//已录制时长
 	int				m_nRecordedSize;		//已录制大小
 	int				m_nPausedTime;			//暂停总时长
 };

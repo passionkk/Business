@@ -25,8 +25,8 @@ public:
 		uint8_t*	pData;
 		int			iDataSize;
 		int			iOffset;
-		uint64_t	iTimeCode;
-		uint64_t	iTimeCodeDTS;
+		int64_t	iTimeCode;
+		int64_t	iTimeCodeDTS;
 	};
 
 	Mp3Record();
@@ -38,8 +38,8 @@ public:
 		FormatType eFormatType,
 		uint8_t *pData,
 		int iDataSize,
-		uint64_t iTimestamp /*us*/,	
-		uint64_t iTimestampDTS /*us*/);
+		int64_t iTimestamp /*us*/,	
+		int64_t iTimestampDTS /*us*/);
 
 	// 开始录制
 	bool Start(
@@ -65,7 +65,7 @@ protected:
 		void *pUserData,
 		const uint8_t *pData,
 		uint32_t iLen,
-		uint64_t iPts /*ms*/ /*,uint64_t iDts*/);
+		int64_t iPts /*ms*/);
 
 	// get ts data from deque then write to file and split file if need.
 	void run();
@@ -84,7 +84,7 @@ private:
 	Mp3Muxer			m_mp3Muxer;
 	Poco::Mutex			m_DataMutex;
 	std::deque<Mp3PacketData *> m_mp3PacketDatas;
-	uint64_t			m_i64StartRecord;
+	int64_t			m_i64StartRecord;
 	Poco::Clock			m_clkPauseOnce; //用于计算暂停一次的持续时长
 	bool				m_bEnableVideo;
 	bool				m_bEnableAudio;

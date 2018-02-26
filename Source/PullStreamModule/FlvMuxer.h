@@ -29,7 +29,7 @@ public:
         void *pUserData,
         const uint8_t *pData,
         uint32_t iLen,
-        uint64_t iPts /*ms*//*, uint64_t iDts*/) = 0;
+        int64_t iPts /*ms*/) = 0;
 
 };
 
@@ -40,7 +40,7 @@ public:
         void *pUserData,
         const uint8_t *pData,
         uint32_t iLen,
-        uint64_t iPts /*ms*//*,uint64_t iDts*/);
+        int64_t iPts /*ms*/);
 
     struct AVPacketData
     {
@@ -48,8 +48,8 @@ public:
         int iDataSize;
         int iOffset;
         int iProbeOffset;
-        uint64_t iTimestamp; // us
-		uint64_t iTimestampDTS;	// us 
+        int64_t iTimestamp; // us
+		int64_t iTimestampDTS;	// us 
         FormatType eFormatType;
     };
 
@@ -75,8 +75,8 @@ public:
         FormatType eFormatType,
         uint8_t *pData,
         int iDataSize,
-        uint64_t iTimestamp /*us*/,
-		uint64_t iTimestampDTS /*us*/);	//含B帧的情况需传入DTS
+        int64_t iTimestamp /*us*/,
+		int64_t iTimestampDTS /*us*/);	//含B帧的情况需传入DTS
 
     // 开始
     bool Start(
@@ -114,8 +114,8 @@ private:
 
     void ReadAVFrame(
         AVPacket *pkt,
-        uint64_t iReferenceTimeVal,
-        uint64_t iCurPts,
+        int64_t iReferenceTimeVal,
+        int64_t iCurPts,
         std::deque<AVPacketData *> *pAVPacketDataDeque);
 
     void SetAVPacketFlag(AVPacket *pkt, MediaType eType);
@@ -151,7 +151,7 @@ private:
     volatile bool m_bTerminateConsume;
 
     const uint32_t m_iBufferSize;
-    uint64_t m_iCurTimeduration; //us
+    int64_t m_iCurTimeduration; //us
 
     Poco::Mutex m_CallbackMutex;
     Poco::Mutex m_DataMutex;

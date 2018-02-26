@@ -110,7 +110,33 @@ BOOL CPullStreamModuleDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
-	
+	int64_t iDuration = 100000;
+	unsigned char chDura[8] = { 0 };
+	for (auto i = sizeof(chDura) - 1; i > 0; --i)
+	{
+		chDura[i] = (unsigned char)(iDuration >> (i * 8));
+	}
+
+	for (auto i = 0; i < sizeof(chDura); ++i)
+	{
+		if (i < 4)
+			chDura[i] = (unsigned char)(iDuration >> ((sizeof(chDura) - i) * 8));
+		else
+			chDura[i] = (unsigned char)((iDuration & 0xffffffff) >> ((sizeof(chDura) - i) * 8));
+	}
+
+	uint32_t i1 = (uint32_t)(iDuration >> 32);
+	uint32_t i2 = (uint32_t)(iDuration & 0xffffffff);
+	chDura[0] = (uint8_t)(i1 >> 24);
+	chDura[1] = (uint8_t)(i1 >> 16);
+	chDura[2] = (uint8_t)(i1 >> 8);
+	chDura[3] = (uint8_t)i1;
+
+	chDura[4] = (uint8_t)(i2 >> 24);
+	chDura[5] = (uint8_t)(i2 >> 16);
+	chDura[6] = (uint8_t)(i2 >> 8);
+	chDura[7] = (uint8_t)i2;
+
 	InitCtrl();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -171,8 +197,8 @@ void CPullStreamModuleDlg::DataHandle(
 	FormatType eFormatType,
 	uint8_t *pData,
 	uint32_t iLen,
-	uint64_t iPts /*ms*/, 
-	uint64_t iDts)
+	int64_t iPts /*ms*/, 
+	int64_t iDts)
 {
 	if (pUserData != NULL)
 	{
@@ -185,8 +211,8 @@ void CPullStreamModuleDlg::OnDataHandle(MediaType eMediaType,
 				  FormatType eFormatType,
 				  uint8_t *pData,
 				  uint32_t iLen,
-				  uint64_t iPts /*ms*/,
-				  uint64_t iDts)
+				  int64_t iPts /*ms*/,
+				  int64_t iDts)
 {
 	if (m_bStartRecord)
 	{
@@ -347,7 +373,6 @@ void CPullStreamModuleDlg::OnBnClickedBtnStopRecord()
 		m_bStartRecord = false;
 		if (m_pRecord)
 			m_pRecord->Stop();
-		//m_TSRecord.Stop();
 	}
 }
 
@@ -358,7 +383,6 @@ void CPullStreamModuleDlg::OnBnClickedBtnPauseRecord()
 	{
 		if (m_pRecord)
 			m_pRecord->Pause();
-		//m_TSRecord.Pause();
 		g_clock.update();
 	}
 }

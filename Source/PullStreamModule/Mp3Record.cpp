@@ -22,7 +22,7 @@ Mp3Record::~Mp3Record()
 	m_pHeaderData = NULL;
 }
 
-bool Mp3Record::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, uint64_t iTimestamp, uint64_t iTimestampDTS)
+bool Mp3Record::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, int64_t iTimestamp, int64_t iTimestampDTS)
 {
 	if ((eMediaType == Audio && m_bEnableAudio) || (eMediaType == Video && m_bEnableVideo))
 	{
@@ -115,7 +115,7 @@ bool Mp3Record::IsRunning() const
 	return m_thread.isRunning() && m_mp3Muxer.IsRunning();
 }
 
-void Mp3Record::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, uint64_t iPts/*, uint64_t iDts*/)
+void Mp3Record::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, int64_t iPts)
 {
 	if (m_RecordState == RS_Record)
 	{
@@ -140,7 +140,7 @@ void Mp3Record::run()
 	Poco::FileStream flvFStream;
 	bool bCloseFile = false;
 	m_i64StartRecord = 0;
-	uint64_t i64LastPacketTime = 0;
+	int64_t i64LastPacketTime = 0;
 	while (!m_bStop)
 	{
 		m_DataMutex.lock();

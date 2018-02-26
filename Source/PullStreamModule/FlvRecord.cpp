@@ -5,12 +5,14 @@ FlvRecord::FlvRecord()
 	: RecordBase()
 	, m_bStop(true)
 	, m_i64StartRecord(0)
+	, m_i64FirstPacketPts(0)
 	, m_bEnableVideo(true)
 	, m_bEnableAudio(true)
 	, m_bFirstPacket(true)
 	, m_nHeaderDataLen(1024)
 {
 	m_pHeaderData = new unsigned char[m_nHeaderDataLen];
+	memset(m_pHeaderData, 0, m_nHeaderDataLen);
 	m_FlvMuxer.Subscribe(this, NULL);
 }
 
@@ -22,7 +24,7 @@ FlvRecord::~FlvRecord()
 	m_pHeaderData = NULL;
 }
 
-bool FlvRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, uint64_t iTimestamp, uint64_t iTimestampDTS)
+bool FlvRecord::ImportAVPacket(MediaType eMediaType, FormatType eFormatType, uint8_t *pData, int iDataSize, int64_t iTimestamp, int64_t iTimestampDTS)
 {
 	if ((eMediaType == Audio && m_bEnableAudio) || (eMediaType == Video && m_bEnableVideo))
 	{
@@ -74,6 +76,7 @@ void FlvRecord::Stop()
 	m_nRecordedDuration = 0;
 	m_nRecordedSize = 0;
 	m_i64StartRecord = 0;
+	m_i64FirstPacketPts = 0;
 	Destroy();
 }
 
@@ -115,7 +118,7 @@ bool FlvRecord::IsRunning() const
 	return m_thread.isRunning() && m_FlvMuxer.IsRunning();
 }
 
-void FlvRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, uint64_t iPts/*, uint64_t iDts*/)
+void FlvRecord::DataHandle(void *pUserData, const uint8_t *pData, uint32_t iLen, int64_t iPts)
 {
 	if (m_RecordState == RS_Record)
 	{
@@ -140,8 +143,11 @@ void FlvRecord::run()
 	FlvPacketData *pPacket = NULL;
 	Poco::FileStream flvFStream;
 	bool bCloseFile = false;
+	bool bCanClose = false;
 	m_i64StartRecord = 0;
-	uint64_t i64LastPacketTime = 0;
+	m_i64FirstPacketPts = 0;
+	int64_t i64LastPacketTime = 0;
+	int64_t i64LastPacketPts = 0;
 	while (!m_bStop)
 	{
 		m_DataMutex.lock();
@@ -159,11 +165,15 @@ void FlvRecord::run()
 			bNeedSplit = false;
 			m_nRecordedSize = 0;
 			m_i64StartRecord = i64LastPacketTime;
+			m_i64FirstPacketPts = i64LastPacketPts;
 			m_nPausedTime = 0;
 			m_nRecordedDuration = 0;
 			bCloseFile = false;
+			bCanClose = false;
 			if (!m_bFirstPacket)
 			{
+				Poco::Mutex::ScopedLock lock(m_DataMutex);
+				pPacket = m_FlvPacketDatas.front();
 				WriteHeader(flvFStream);
 #if WIN32
 				TRACE(L"[FlvRecord::run]write Header.\n");
@@ -187,14 +197,21 @@ void FlvRecord::run()
 			m_nHeaderDataLen = pPacket->iDataSize;
 			memcpy(m_pHeaderData, pPacket->pData, m_nHeaderDataLen);
 		}
+		else
+		{
+			i64LastPacketPts = UpdatePacketPts(pPacket, m_i64FirstPacketPts);
+		}
+	
 		flvFStream.write((const char*)pPacket->pData, pPacket->iDataSize);
 		m_nRecordedSize += pPacket->iDataSize;
+
 		if (m_nSplitType == 0)
 		{
 			m_nRecordedDuration = pPacket->iTimeCode - m_i64StartRecord - m_nPausedTime;
 			if (m_nRecordedDuration >= m_nSplitDuration)
 			{
 				bNeedSplit = true;
+				WriteTailer(flvFStream, i64LastPacketTime);
 				flvFStream.close();
 				bCloseFile = true;
 			}
@@ -204,6 +221,7 @@ void FlvRecord::run()
 			if (m_nRecordedSize >= m_nSplitSize)
 			{
 				bNeedSplit = true;
+				WriteTailer(flvFStream, i64LastPacketTime);
 				flvFStream.close();
 				bCloseFile = true;
 			}
@@ -218,11 +236,15 @@ void FlvRecord::run()
 		delete pPacket;
 		m_FlvPacketDatas.pop_front();
 	}
-	if(!bCloseFile)
+	if (!bCloseFile)
+	{
+		WriteTailer(flvFStream, i64LastPacketTime);
 		flvFStream.close();
+	}
 }
 
-int FlvRecord::WriteHeader(Poco::FileStream& flvFStream, uint64_t uintPts)
+#if 0
+int FlvRecord::WriteHeader(Poco::FileStream& flvFStream, int64_t uintPts)
 {
 	int nRet = 0;
 	//FLV Header
@@ -259,22 +281,69 @@ int FlvRecord::WriteHeader(Poco::FileStream& flvFStream, uint64_t uintPts)
 
 	return nRet;
 }
+#endif 
 
-int FlvRecord::WriteHeader(Poco::FileStream& flvStream)
+int FlvRecord::WriteHeader(Poco::FileStream& flvStream, int64_t iPts)
 {
 	int nRet = -1;
 	if (m_pHeaderData && m_nHeaderDataLen > 0)
 	{
+		if (iPts >= 0)
+		{//update ts  第18-20个字节是timestamp字段(共3个字节)
+			*(m_pHeaderData + 17) = (int)(iPts >> 16);
+			*(m_pHeaderData + 18) = (int)(iPts >> 8);
+			*(m_pHeaderData + 19) = (int)(iPts);
+		}
 		flvStream.write((const char*)m_pHeaderData, m_nHeaderDataLen);
 		nRet = 0;
 	}
 	return nRet;
 }
 
-int FlvRecord::WriteTailer(Poco::FileStream& flvFStream)
+int FlvRecord::WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts)
 {
 	int nRet = 0;
+	if (iLastPts < m_i64StartRecord || iLastPts < 0)
+		nRet = -1;
+	else
+	{
+		flvFStream.seekg(0, flvFStream.end);
+		int nLength = flvFStream.tellg();
+		int64_t iDuration = iLastPts - m_i64StartRecord;
+		uint32_t i1 = (uint32_t)(iDuration >> 32);
+		uint32_t i2 = (uint32_t)(iDuration & 0xffffffff);
+		
+		char chDura[8] = { 0 };
+		chDura[0] = (uint8_t)(i1 >> 24);
+		chDura[1] = (uint8_t)(i1 >> 16);
+		chDura[2] = (uint8_t)(i1 >> 8);
+		chDura[3] = (uint8_t)i1;
+
+		chDura[4] = (uint8_t)(i2 >> 24);
+		chDura[5] = (uint8_t)(i2 >> 16);
+		chDura[6] = (uint8_t)(i2 >> 8);
+		chDura[7] = (uint8_t)i2;
+		//更新第53个字节 duration 和 filesize
+		flvFStream.seekg(52, flvFStream.beg);
+		flvFStream.write(chDura, sizeof(chDura));
+	}
 	return nRet;
+}
+
+int64_t FlvRecord::UpdatePacketPts(FlvPacketData* pPacket, int64_t i64FirstPacketPts)
+{
+	int64_t iRet = 0;
+	iRet = ((uint8_t)(*(pPacket->pData + 7)) << 24) + 
+					((uint8_t)(*(pPacket->pData + 4)) << 16) + 
+					((uint8_t)(*(pPacket->pData + 5)) << 8) + 
+					(uint8_t)(*(pPacket->pData + 6));
+
+	*(pPacket->pData + 4) = (uint8_t)((iRet - i64FirstPacketPts) >> 16);
+	*(pPacket->pData + 5) = (uint8_t)((iRet - i64FirstPacketPts) >> 8);
+	*(pPacket->pData + 6) = (uint8_t)(iRet - i64FirstPacketPts);
+	*(pPacket->pData + 7) = (uint8_t)((iRet - i64FirstPacketPts) >> 24);
+
+	return iRet;
 }
 
 void FlvRecord::Destroy()

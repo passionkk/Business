@@ -27,8 +27,8 @@ public:
 		FormatType eFormatType,
 		uint8_t *pData,
 		uint32_t iLen,
-		uint64_t iPts /*ms*/,
-		uint64_t iDts) = 0;
+		int64_t iPts /*ms*/,
+		int64_t iDts) = 0;
 
 };
 
@@ -43,8 +43,8 @@ public:
 		FormatType eFormatType,
 		uint8_t *pData,
 		uint32_t iLen,
-		uint64_t iPts /*ms*/,
-		uint64_t iDts);
+		int64_t iPts /*ms*/,
+		int64_t iDts);
 
 	PullStreamModule();
 	~PullStreamModule();

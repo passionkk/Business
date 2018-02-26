@@ -124,8 +124,8 @@ bool FlvMuxer::ImportAVPacket(
     FormatType eFormatType,
     uint8_t *pData,
     int iDataSize,
-    uint64_t iTimestamp,
-	uint64_t iTimestampDTS)
+    int64_t iTimestamp,
+	int64_t iTimestampDTS)
 {
     if (m_bRoutineStop || (NULL == pData) || iDataSize <= 0 ||
         (Audio == eMediaType && none == m_eAFormatType) ||
@@ -491,9 +491,9 @@ void FlvMuxer::run()
             break;
         }
 
-        uint64_t iAFirstTimestamp = ULLONG_MAX;
-        uint64_t iVFirstTimestamp = ULLONG_MAX;
-        uint64_t iBaseTimestamp = ULLONG_MAX;
+        int64_t iAFirstTimestamp = LLONG_MAX;
+        int64_t iVFirstTimestamp = LLONG_MAX;
+        int64_t iBaseTimestamp	 = LLONG_MAX;
         {
             Poco::Mutex::ScopedLock lock(m_DataMutex);
             if (bHasAudio)
@@ -755,8 +755,8 @@ AVInputFormat *FlvMuxer::GetAVInputFormat(FormatType eType)
 
 void FlvMuxer::ReadAVFrame(
     AVPacket *pkt,
-    uint64_t iReferenceTimestamp,
-    uint64_t iCurPts,
+    int64_t iReferenceTimestamp,
+    int64_t iCurPts,
     std::deque<AVPacketData *> *pAVPacketDataDeque)
 {
     pkt->data = NULL;

@@ -166,6 +166,7 @@ void PullStreamModule::run()
 		int nGetKetPacket = 0;
 		while (!m_bStop)
 		{
+			//execute seek operation
 			nReadFrame = av_read_frame(m_pFmtCtx, &packet);
 			if (nReadFrame  < 0)
 			{
@@ -184,8 +185,8 @@ void PullStreamModule::run()
 				if (pPkt->stream_index == m_nVidStreamIndex && m_bGetVideo)
 				{
 					iPktPts = pPkt->pts == AV_NOPTS_VALUE ? pPkt->dts : pPkt->pts;
-					pPkt->pts = (iPktPts - iVStartTime) * av_q2d(videoTimebase) * 1000;//ms
-					pPkt->dts = (pPkt->dts - iVStartTime) * av_q2d(videoTimebase) * 1000;//ms
+					pPkt->pts = int64_t((iPktPts - iVStartTime) * av_q2d(videoTimebase) * 1000);//ms
+					pPkt->dts = int64_t((pPkt->dts - iVStartTime) * av_q2d(videoTimebase) * 1000);//ms
 
 					if (pPkt->pts >= 0 && pPkt->dts >= 0)
 					{
@@ -202,8 +203,8 @@ void PullStreamModule::run()
 				else if (pPkt->stream_index == m_nAudStreamIndex && m_bGetAudio)
 				{ 
 					iPktPts = pPkt->pts == AV_NOPTS_VALUE ? pPkt->dts : pPkt->pts;
-					pPkt->pts = (iPktPts - iAStartTime) * av_q2d(audioTimebase) * 1000;//ms
-					pPkt->dts = (pPkt->dts - iAStartTime) * av_q2d(audioTimebase) * 1000;//ms
+					pPkt->pts = int64_t((iPktPts - iAStartTime) * av_q2d(audioTimebase) * 1000);//ms
+					pPkt->dts = int64_t((pPkt->dts - iAStartTime) * av_q2d(audioTimebase) * 1000);//ms
 
 					if (pPkt->pts >= 0 && pPkt->dts >= 0)
 					{
@@ -484,7 +485,7 @@ void PullStreamModule::HandleVData(void* pParam)
 
 void PullStreamModule::OnHandleVData()
 {
-	int64_t iLastPts = ULLONG_MAX;
+	int64_t iLastPts = LLONG_MAX;
 	while (!m_bStop)
 	{
 		if (m_dequeVideoPkt.empty())
@@ -531,6 +532,8 @@ void PullStreamModule::OnHandleVData()
 				}
 			}
 			m_dequeVideoPkt.pop_front();
+			if (m_pVFilterContext != nullptr)
+				av_free(pPkt->data);
 			av_packet_unref(pPkt);
 			av_packet_free(&pPkt);
 		}
