@@ -17,7 +17,7 @@ class RecordBase
 {
 public:
 	RecordBase();
-	~RecordBase();
+	virtual ~RecordBase();
 
 	// 导入音视频数据
 	virtual bool ImportAVPacket(

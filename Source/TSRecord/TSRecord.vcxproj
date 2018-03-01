@@ -62,6 +62,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>../../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>../../Depends/Poco;../../Depends/FFmpeg</AdditionalLibraryDirectories>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>

@@ -13,7 +13,8 @@ RecordBase::RecordBase()
 {}
 
 RecordBase::~RecordBase()
-{}
+{
+}
 
 bool g_bGlobalInitSuccess = InitEnv();
 

@@ -514,7 +514,9 @@ void FlvMuxer::run()
 #endif
         Poco::Clock now;
         int64_t iNowTimestamp = now.raw();
-        while (!m_bRoutineStop)
+		AVPacket pkt;
+		uint8_t* dataAddr = nullptr;
+		while (!m_bRoutineStop)
         {
             bool bHasData = false;
             {
@@ -559,7 +561,6 @@ void FlvMuxer::run()
             std::deque<AVPacketData *> * pAVPacketDataDeque = NULL;
             MediaType eType = Audio;
 
-            AVPacket pkt;
             av_init_packet(&pkt);
 
             if ((bHasVideo && bHasAudio && (iVPts <= iAPts || iVDts <= iAPts)) || // AV流都存在时
@@ -623,18 +624,16 @@ void FlvMuxer::run()
                 sError = "Error muxing packet";
                 break;
             }
-            if (av_write_frame(m_pOutFormatCtx, NULL) < 0)
+			if (av_write_frame(m_pOutFormatCtx, NULL) < 0)
 			{
                 sError = "Error muxing packet";
                 break;
             }
 			// free AVPacket
-			/*if (pkt.data)
-            {
-                free(pkt.data);
-            }*/
+			if (dataAddr)
+				free(dataAddr); 
 			av_packet_unref(&pkt);
-        }
+		}
 
         av_write_trailer(m_pOutFormatCtx);
     } while (false);

@@ -30,7 +30,7 @@ public:
 	};
 
 	Mp3Record();
-	~Mp3Record();
+	virtual ~Mp3Record();
 
 	// 导入音视频数据
 	bool ImportAVPacket(

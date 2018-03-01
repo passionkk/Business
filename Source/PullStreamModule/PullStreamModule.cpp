@@ -1,13 +1,14 @@
 #include "stdafx.h"
 #include "PullStreamModule.h"
+#include "Poco/clock.h"
 
-
-bool /*PullStreamModule::*/SortByPts(AVPacket* pkt1, AVPacket* pkt2)
+bool SortByPts(AVPacket* pkt1, AVPacket* pkt2)
 {
 	return pkt1->pts < pkt2->pts;
 }
 
 //从extradata里解析ADTS结构
+//ffmpeg 中有 avpriv_aac_parse_header 函数
 int AAC_Decode_Extradata(ADTSContext *pADTS, unsigned char *pExtradata, int nBufSize)
 {
 	int nAot, nAotext, nSamFreIndex, nChannelConfig;
@@ -46,9 +47,9 @@ int AAC_Decode_Extradata(ADTSContext *pADTS, unsigned char *pExtradata, int nBuf
 		}
 	}
 
-#ifdef AOT_PROFILE_CTRL  //网络上找的代码，此句不明所以
-	if (nAot < 2) 
-		nAot= 2;
+#ifdef AOT_PROFILE_CTRL
+	if (nAot < 2)
+		nAot = 2;
 #endif  
 	pADTS->nObjectType = nAot - 1;
 	pADTS->nSampleRateIndex = nSamFreIndex;
@@ -118,6 +119,7 @@ PullStreamModule::PullStreamModule()
 	, m_pVFilterContext(NULL)
 	, m_pAFilterContext(NULL)
 	, m_bAutoReconnect(true)
+	, m_bSeekRequest(false)
 {
 	m_dequeVideoPkt.clear();
 	m_dequeAudioPkt.clear();
@@ -149,7 +151,7 @@ void PullStreamModule::run()
 		int64_t iVStartTime = 0;
 		int64_t iAStartTime = 0;
 		int64_t iPktPts = 0;
-
+		bool bAddADTSHeader = false;
 		if (m_nVidStreamIndex >= 0)
 		{
 			videoTimebase = m_pFmtCtx->streams[m_nVidStreamIndex]->time_base;
@@ -161,12 +163,33 @@ void PullStreamModule::run()
 			audioTimebase = m_pFmtCtx->streams[m_nAudStreamIndex]->time_base;
 			if (AV_NOPTS_VALUE != m_pFmtCtx->streams[m_nAudStreamIndex]->start_time)
 				iAStartTime = m_pFmtCtx->streams[m_nAudStreamIndex]->start_time;
+			if (m_pFmtCtx->streams[m_nAudStreamIndex]->codec->extradata
+				&& m_pFmtCtx->streams[m_nAudStreamIndex]->codec->extradata_size > 0)
+				bAddADTSHeader = true;
 		}
 		int nReadFrame = 0;
 		int nGetKetPacket = 0;
+		Poco::Clock now;
+		int64_t iNowTimestamp = now.raw();
+		int64_t msTime = 0;
 		while (!m_bStop)
 		{
 			//execute seek operation
+			if (m_bSeekRequest)
+			{
+				int nRet = avformat_seek_file(m_pFmtCtx, -1, LLONG_MIN, m_i64SeeMillSec / 1000 * AV_TIME_BASE, LLONG_MAX, 0);
+				if (nRet < 0)
+				{
+					printf("[PullStreamModule::run]execute seek fail, seek millsec is %lld.\n", m_i64SeeMillSec);
+				}
+				else
+				{
+					ClearVData();
+					ClearAData();
+				}
+				m_bSeekRequest = false;
+				m_i64SeeMillSec = 0;
+			}
 			nReadFrame = av_read_frame(m_pFmtCtx, &packet);
 			if (nReadFrame  < 0)
 			{
@@ -182,22 +205,43 @@ void PullStreamModule::run()
 			}
 			else
 			{
+				Sleep(4);
 				if (pPkt->stream_index == m_nVidStreamIndex && m_bGetVideo)
 				{
 					iPktPts = pPkt->pts == AV_NOPTS_VALUE ? pPkt->dts : pPkt->pts;
 					pPkt->pts = int64_t((iPktPts - iVStartTime) * av_q2d(videoTimebase) * 1000);//ms
 					pPkt->dts = int64_t((pPkt->dts - iVStartTime) * av_q2d(videoTimebase) * 1000);//ms
+					
+				#if 0
+					now.update();
+					msTime = (now.raw() - iNowTimestamp) / 1000;
+					TRACE(L"[pullStreamModule] msTime = %lld, pPkt dts = %lld, pPkt pts = %lld.\n", msTime, pPkt->dts, pPkt->pts);
+				#endif 
 
 					if (pPkt->pts >= 0 && pPkt->dts >= 0)
 					{
-						AVPacket* pSavePkt = av_packet_clone(pPkt);
-
 						if (m_pVFilterContext != NULL)
+						{
 							av_bitstream_filter_filter(m_pVFilterContext, m_pFmtCtx->streams[m_nVidStreamIndex]->codec, NULL,
-							&pSavePkt->data, &pSavePkt->size, pPkt->data, pPkt->size, pPkt->flags & AV_PKT_FLAG_KEY);
+													   &pPkt->data, &pPkt->size, pPkt->data, pPkt->size, pPkt->flags & AV_PKT_FLAG_KEY);
 
+						}
+
+						AVPacket* pSavePkt = av_packet_alloc();
+						av_init_packet(pSavePkt);
+						av_new_packet(pSavePkt, pPkt->size);
+						memcpy(pSavePkt->data, pPkt->data, pPkt->size);
+						pSavePkt->size = pPkt->size;
+						pSavePkt->pts = pPkt->pts;
+						pSavePkt->dts = pPkt->dts;
+						
 						Poco::Mutex::ScopedLock lock(m_mutexVideoDeque);
 						m_dequeVideoPkt.push_back(pSavePkt);
+
+						if (m_pVFilterContext != NULL)
+						{
+							av_free(pPkt->data);
+						}
 					}
 				}
 				else if (pPkt->stream_index == m_nAudStreamIndex && m_bGetAudio)
@@ -209,25 +253,27 @@ void PullStreamModule::run()
 					if (pPkt->pts >= 0 && pPkt->dts >= 0)
 					{
 						AVPacket* pSavePkt = av_packet_alloc();
-						av_new_packet(pSavePkt, pPkt->size + ADTS_HEADER_SIZE);
-						if (m_pFmtCtx->streams[m_nAudStreamIndex]->codec->codec_id == AV_CODEC_ID_AAC)
-							pSavePkt->size = pPkt->size + ADTS_HEADER_SIZE;
-						else
-							pSavePkt->size = pPkt->size;
-						pSavePkt->pts = pPkt->pts;
-						if (pSavePkt->dts < 0)
-							pSavePkt->dts = pSavePkt->pts;
-
-						if (m_pFmtCtx->streams[m_nAudStreamIndex]->codec->codec_id == AV_CODEC_ID_AAC)
+						av_init_packet(pSavePkt);
+						if (m_pFmtCtx->streams[m_nAudStreamIndex]->codec->codec_id == AV_CODEC_ID_AAC && bAddADTSHeader)
 						{
+							av_new_packet(pSavePkt, pPkt->size + ADTS_HEADER_SIZE);
+							pSavePkt->size = pPkt->size + ADTS_HEADER_SIZE;
 							AAC_Set_ADTS_Head(&m_stADTSCtx, m_sADTSHeader, pPkt->size);
 							memcpy(pSavePkt->data, m_sADTSHeader, ADTS_HEADER_SIZE);
 							memcpy(pSavePkt->data + ADTS_HEADER_SIZE, pPkt->data, pPkt->size);
 						}
 						else
 						{
+							av_new_packet(pSavePkt, pPkt->size);
+							pSavePkt->size = pPkt->size;
 							memcpy(pSavePkt->data, pPkt->data, pPkt->size);
 						}
+						
+						pSavePkt->pts = pPkt->pts;
+
+						if (pSavePkt->dts < 0)
+							pSavePkt->dts = pSavePkt->pts;
+
 						Poco::Mutex::ScopedLock lock(m_mutexAudioDeque);
 						m_dequeAudioPkt.push_back(pSavePkt);
 					}
@@ -368,8 +414,10 @@ bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetA
 				{
 					bRet = false;
 				}
-				if (m_pFmtCtx->streams[m_nAudStreamIndex]->codec->codec_id == AV_CODEC_ID_AAC && bRet)
+
+				if (bRet && pCodecCtx->codec_id == AV_CODEC_ID_AAC && pCodecCtx->extradata && pCodecCtx->extradata_size > 0)
 				{
+					m_stADTSCtx.InitContext();
 					AAC_Decode_Extradata(&m_stADTSCtx, (unsigned char*)pCodecCtx->extradata, pCodecCtx->extradata_size);
 				}
 			}
@@ -408,10 +456,14 @@ bool PullStreamModule::OpenStream(std::string strUrl, bool bGetVideo, bool bGetA
 	return bRet;
 }
 
-int	PullStreamModule::Seek(int nMillSec)
+int	PullStreamModule::Seek(int64_t i64MillSec)
 {
 	int nRet = 0;
-	
+	if (i64MillSec >= 0)
+	{
+		m_i64SeeMillSec = i64MillSec;
+		m_bSeekRequest = true;
+	}
 	return nRet;
 }
 
@@ -427,6 +479,8 @@ bool PullStreamModule::CloseStream(bool bIsReconnect)
 		m_ADataThread.join();
 
 		m_bOpenStream = false;
+		ClearVData();
+		ClearAData();
 	}
 
 	if (m_pFmtCtx != NULL)
@@ -435,11 +489,13 @@ bool PullStreamModule::CloseStream(bool bIsReconnect)
 		{
 			avcodec_close(m_pFmtCtx->streams[m_nAudStreamIndex]->codec);
 			avcodec_free_context(&m_pFmtCtx->streams[m_nAudStreamIndex]->codec);
+			m_nAudStreamIndex = -1;
 		}
 		if (m_stVAFileInfo.bHasAudio && m_nVidStreamIndex >= 0)
 		{
 			avcodec_close(m_pFmtCtx->streams[m_nVidStreamIndex]->codec);
 			avcodec_free_context(&m_pFmtCtx->streams[m_nVidStreamIndex]->codec);
+			m_nVidStreamIndex = -1;
 		}
 		avformat_close_input(&m_pFmtCtx);
 		m_pFmtCtx = NULL;
@@ -453,7 +509,6 @@ bool PullStreamModule::CloseStream(bool bIsReconnect)
 			av_bitstream_filter_close(m_pAFilterContext);
 			m_pAFilterContext = NULL;
 		}
-		
 	}
 
 	return bRet;
@@ -532,8 +587,7 @@ void PullStreamModule::OnHandleVData()
 				}
 			}
 			m_dequeVideoPkt.pop_front();
-			if (m_pVFilterContext != nullptr)
-				av_free(pPkt->data);
+			
 			av_packet_unref(pPkt);
 			av_packet_free(&pPkt);
 		}
@@ -599,6 +653,32 @@ void PullStreamModule::OnHandleAData()
 			av_packet_unref(pPkt);
 			av_packet_free(&pPkt);
 		}
+	}
+}
+
+void PullStreamModule::ClearVData()
+{
+	Poco::Mutex::ScopedLock lock(m_mutexVideoDeque);
+	AVPacket* pPkt = nullptr;
+	while (!m_dequeVideoPkt.empty())
+	{
+		pPkt = m_dequeVideoPkt.front();
+		m_dequeVideoPkt.pop_front();
+		av_packet_unref(pPkt);
+		av_packet_free(&pPkt);
+	}
+}
+
+void PullStreamModule::ClearAData()
+{
+	Poco::Mutex::ScopedLock lock(m_mutexAudioDeque);
+	AVPacket* pPkt = nullptr;
+	while (!m_dequeAudioPkt.empty())
+	{
+		pPkt = m_dequeAudioPkt.front();
+		m_dequeAudioPkt.pop_front();
+		av_packet_unref(pPkt);
+		av_packet_free(&pPkt);
 	}
 }
 

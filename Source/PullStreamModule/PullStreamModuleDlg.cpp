@@ -6,6 +6,8 @@
 #include "PullStreamModulePro.h"
 #include "PullStreamModuleDlg.h"
 #include "afxdialogex.h"
+#include "poco/Path.h"
+#include "poco/File.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -245,7 +247,10 @@ void CPullStreamModuleDlg::OnBnClickedBtnOpenStream()
 	std::string sUrl = CT2A(strText);
 
 	bool bAutoReconnect = (BST_CHECKED == ((CButton *)GetDlgItem(IDC_CHECK_AUTORECONNECT))->GetCheck());
-
+	if (sUrl.find("H264-1VA0-FRAME.mp4") != std::string::npos)
+	{
+		m_rmtpModule.Seek(10 * 1000);
+	}
 	if (m_rmtpModule.OpenStream(sUrl, true, true, bAutoReconnect))
 		TRACE(L"[拉流成功].\n");
 	else
@@ -327,6 +332,13 @@ void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 	}
 
 	UpdateData(TRUE);
+	Poco::File recordDir("./RecordFile");
+	if (!recordDir.exists())
+	{
+		if (!recordDir.createDirectory())
+			AfxMessageBox(L"创建录制目录RecordFile失败");
+	}
+
 	switch (m_radioRecFileType)
 	{
 	case 0:
@@ -353,13 +365,11 @@ void CPullStreamModuleDlg::OnBnClickedBtnStartRecord()
 		{
 			int nTime = GetDlgItemInt(IDC_EDIT_TIME);
 			m_pRecord->SetSplitDuration(nTime);
-			//m_TSRecord.SetSplitDuration(nTime);
 		}
 		else if(BST_CHECKED == ((CButton *)GetDlgItem(IDC_RADIO_SIZE))->GetCheck())
 		{ 
 			int nSize = GetDlgItemInt(IDC_EDIT_SIZE);
 			m_pRecord->SetSplitSize(nSize);
-			//m_TSRecord.SetSplitSize(nSize);
 		}
 		m_bStartRecord = true;
 	}
@@ -450,12 +460,6 @@ void CPullStreamModuleDlg::InitCtrl()
 	strUrl = _T("rtmp://v1.one-tv.com/live/mpegts.stream");
 	m_cmbUrl.InsertString(nIndex++, strUrl);
 	
-	strUrl = _T("rtmp://live.hkstv.hk.lxdns.com/live/hks");
-	m_cmbUrl.InsertString(nIndex++, strUrl);
-	
-	strUrl = _T("rtmp://live.hkstv.hk.lxdns.com/live/hks");
-	m_cmbUrl.InsertString(nIndex++, strUrl);
-
 	m_cmbUrl.SetCurSel(0);
 }
 

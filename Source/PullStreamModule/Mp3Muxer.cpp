@@ -349,7 +349,7 @@ int Mp3Muxer::OnDataHandle(uint8_t *pBuf, int iBufSize)
         {
         }
     }
-    return iBufSize;
+	return iBufSize;
 }
 
 void Mp3Muxer::run()
@@ -629,10 +629,14 @@ void Mp3Muxer::run()
                 break;
             }
 			// free AVPacket
-			/*if (pkt.data)
-            {
-                free(pkt.data);
-            }*/
+			if (pkt.buf)
+			{
+				free(pkt.buf);
+			}
+			else if (pkt.data)
+			{
+				free(pkt.data);
+			}
 			av_packet_unref(&pkt);
         }
 

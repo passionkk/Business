@@ -30,7 +30,7 @@ public:
 	};
 
 	FlvRecord();
-	~FlvRecord();
+	virtual ~FlvRecord();
 
 	// 导入音视频数据
 	bool ImportAVPacket(

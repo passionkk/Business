@@ -308,7 +308,6 @@ int FlvRecord::WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts)
 	else
 	{
 		flvFStream.seekg(0, flvFStream.end);
-		int nLength = flvFStream.tellg();
 		int64_t iDuration = iLastPts - m_i64StartRecord;
 		uint32_t i1 = (uint32_t)(iDuration >> 32);
 		uint32_t i2 = (uint32_t)(iDuration & 0xffffffff);

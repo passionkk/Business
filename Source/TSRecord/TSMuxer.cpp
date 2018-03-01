@@ -344,7 +344,7 @@ int TSMuxer::OnDataHandle(uint8_t *pBuf, int iBufSize)
         {
         }
     }
-    return iBufSize;
+	return iBufSize;
 }
 
 void TSMuxer::run()
@@ -508,6 +508,8 @@ void TSMuxer::run()
 #endif
         Poco::Clock now;
         int64_t iNowTimestamp = now.raw();
+		AVPacket pkt;
+		uint8_t* dataAddr = nullptr;
         while (!m_bRoutineStop)
         {
             bool bHasData = false;
@@ -553,8 +555,7 @@ void TSMuxer::run()
             std::deque<AVPacketData *> * pAVPacketDataDeque = NULL;
             MediaType eType = Audio;
 
-            AVPacket pkt;
-            av_init_packet(&pkt);
+			av_init_packet(&pkt);
 
             if ((bHasVideo && bHasAudio && iVPts <= iAPts) || // AV流都存在时
                 (bHasVideo && !bHasAudio)) // 视频流存在、音频流不存在时
@@ -603,33 +604,27 @@ void TSMuxer::run()
                 pInStream->time_base, pOutStream->time_base,
                 (AVRounding)(AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
 
-            //pkt.dts = pkt.pts;
-			
             pkt.stream_index = iOutStreamIndex;
 
             //Write
             now.update();
             m_iCurTimeduration = now.raw() - iNowTimestamp;
             m_iCurTimeduration /= 1000;
-            if (av_write_frame(m_pOutFormatCtx, &pkt) < 0)
+			dataAddr = pkt.data;
+			if (av_write_frame(m_pOutFormatCtx, &pkt) < 0)
 			{
                 sError = "Error muxing packet";
                 break;
             }
-            if (av_write_frame(m_pOutFormatCtx, NULL) < 0)
+
+			if (av_write_frame(m_pOutFormatCtx, NULL) < 0)
 			{
                 sError = "Error muxing packet";
                 break;
             }
 			// free AVPacket
-			if (pkt.buf)
-			{ 
-				free(pkt.buf);
-			}
-			else if (pkt.data)
-            {
-                free(pkt.data);
-            }
+			if (dataAddr)
+				free(dataAddr);
 			av_packet_unref(&pkt);
         }
 
@@ -784,12 +779,12 @@ void TSMuxer::ReadAVFrame(
 
         if (iCurPts == pAVPacketData->iTimestamp - iReferenceTimestamp)
         {
-            pkt->data = (uint8_t*)realloc(pkt->data,
-						pAVPacketData->iDataSize + pkt->size /*+ AV_INPUT_BUFFER_PADDING_SIZE*/);
-            memcpy(pkt->data + pkt->size,
+			pkt->data = (uint8_t*)realloc(pkt->data,
+						pAVPacketData->iDataSize + pkt->size);
+			memcpy(pkt->data + pkt->size,
                 pAVPacketData->pData, pAVPacketData->iDataSize);
-			//memset(pkt->data + pAVPacketData->iDataSize, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-			pkt->size += (pAVPacketData->iDataSize /*+ AV_INPUT_BUFFER_PADDING_SIZE*/);
+
+			pkt->size += (pAVPacketData->iDataSize);
             delete[] pAVPacketData->pData;
             delete pAVPacketData;
             Poco::Mutex::ScopedLock lock(m_DataMutex);

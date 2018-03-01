@@ -163,9 +163,8 @@ void Mp3Record::run()
 			bCloseFile = false;
 			if (!m_bFirstPacket)
 			{
-				//WriteHeader(flvFStream);
 #if WIN32
-				TRACE(L"[FlvRecord::run]write Header.\n");
+				TRACE(L"[Mp3Record::run]write Header.\n");
 #endif
 			}
 		}

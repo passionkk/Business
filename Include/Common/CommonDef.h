@@ -67,6 +67,14 @@ extern "C"
 
 struct ADTSContext
 {
+	void InitContext()
+	{
+		nWriteADTS = 0;
+		nObjectType = 0;
+		nSampleRateIndex = 0;
+		nChannelConf = 0;
+	}
+
 	int nWriteADTS;
 	int nObjectType;
 	int nSampleRateIndex;

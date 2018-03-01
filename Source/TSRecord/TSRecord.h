@@ -29,7 +29,7 @@ public:
 	};
 
 	TSRecord();
-	~TSRecord();
+	virtual ~TSRecord();
 
 	// 导入音视频数据
 	bool ImportAVPacket(

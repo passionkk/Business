@@ -71,7 +71,7 @@ public:
 
 	// 可能暂时用不到
 	// Seek 
-	int		Seek(int nMillSec);
+	int		Seek(int64_t i64MillSec);
 	// 设置视频解码参数
 	void	SetVideoParam(int nDstWidth, int nDstHeight, PixelFmt eDstPixFmt);
 	// 设置音频解码参数
@@ -86,7 +86,9 @@ protected:
 	static void	HandleAData(void* pParam);
 	void	OnHandleVData();
 	void	OnHandleAData();
-	//bool	SortByPts(AVPacket* pkt1, AVPacket* pkt2);
+	void	ClearVData();
+	void	ClearAData();
+
 protected:
 	std::string		m_strUrl;
 	
@@ -142,6 +144,9 @@ protected:
 	AVBitStreamFilterContext* m_pAFilterContext;
 	ADTSContext		m_stADTSCtx;
 	unsigned char m_sADTSHeader[ADTS_HEADER_SIZE];
+
+	int64_t			m_i64SeeMillSec;
+	bool			m_bSeekRequest;
 };
 
 #endif
