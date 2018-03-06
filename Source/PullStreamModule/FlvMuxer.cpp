@@ -507,7 +507,7 @@ void FlvMuxer::run()
         }
 #ifdef WIN32
         iBaseTimestamp = min(iAFirstTimestamp, iVFirstTimestamp);
-		TRACE(L"[TSMuxer::run]iAFirstTimestamp is %I64u\n iVFirstTimestamp is %I64u\n iBaseTimestamp is %I64u.\n",
+		TRACE(L"[FLVMuxer::run]iAFirstTimestamp is %I64u\n iVFirstTimestamp is %I64u\n iBaseTimestamp is %I64u.\n",
 			  iAFirstTimestamp, iVFirstTimestamp, iBaseTimestamp);
 #else
         iBaseTimestamp = std::min(iAFirstTimestamp, iVFirstTimestamp);

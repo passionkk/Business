@@ -235,6 +235,8 @@ void FlvRecord::run()
 		delete[] pPacket->pData;
 		delete pPacket;
 		m_FlvPacketDatas.pop_front();
+		//每写一个数据包就更新总时长
+		WriteTailer(flvFStream, i64LastPacketTime);
 	}
 	if (!bCloseFile)
 	{
@@ -300,7 +302,7 @@ int FlvRecord::WriteHeader(Poco::FileStream& flvStream, int64_t iPts)
 	return nRet;
 }
 
-int FlvRecord::WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts)
+int FlvRecord::WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts, bool bEnd)
 {
 	int nRet = 0;
 	if (iLastPts < m_i64StartRecord || iLastPts < 0)
@@ -325,6 +327,8 @@ int FlvRecord::WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts)
 		//更新第53个字节 duration 和 filesize
 		flvFStream.seekg(52, flvFStream.beg);
 		flvFStream.write(chDura, sizeof(chDura));
+		if (!bEnd)
+			flvFStream.seekg(0, flvFStream.end);
 	}
 	return nRet;
 }

@@ -71,7 +71,7 @@ protected:
 	void run();
 
 	int WriteHeader(Poco::FileStream& flvStream, int64_t iPts = -1);
-	int WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts);
+	int WriteTailer(Poco::FileStream& flvFStream, int64_t iLastPts, bool bEnd = false);
 
 	int64_t UpdatePacketPts(FlvPacketData* pPacketData, int64_t i64FirstPacketPts);
 

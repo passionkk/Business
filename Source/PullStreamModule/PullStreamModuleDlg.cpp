@@ -268,10 +268,11 @@ void CPullStreamModuleDlg::OnClose()
 {
 	if (m_pRecord)
 	{
+		m_pRecord->Stop();
 		delete m_pRecord;
 		m_pRecord = nullptr;
 	}
-
+	m_rmtpModule.UnSubscribe(DataHandle);
 	m_rmtpModule.CloseStream();
 	FFmpegInit::GetInstance()->Uninitialize();
 

@@ -507,7 +507,7 @@ void Mp3Muxer::run()
         }
 #ifdef WIN32
         iBaseTimestamp = min(iAFirstTimestamp, iVFirstTimestamp);
-		TRACE(L"[TSMuxer::run]iAFirstTimestamp is %I64u\n iVFirstTimestamp is %I64u\n iBaseTimestamp is %I64u.\n",
+		TRACE(L"[MP3Muxer::run]iAFirstTimestamp is %I64u\n iVFirstTimestamp is %I64u\n iBaseTimestamp is %I64u.\n",
 			  iAFirstTimestamp, iVFirstTimestamp, iBaseTimestamp);
 #else
         iBaseTimestamp = std::min(iAFirstTimestamp, iVFirstTimestamp);
